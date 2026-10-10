@@ -21,3 +21,17 @@ Planning and tracking live on GitHub issues, so the whole route stays visible th
 - A new project, or a feature too big for one session (a rewrite, a new subsystem), starts with `/wayfinder`: it names the destination and charts the decisions as tickets.
 - A single feature or design question (a UI that feels wrong, one behaviour to settle) goes through `/grill-with-docs`, with `/prototype` when seeing it beats discussing it.
 - Resolved tickets are not gone: the wayfinder map issue's "Decisions so far" is the index. Read it before picking up work.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues for Henakers/portfolio, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
