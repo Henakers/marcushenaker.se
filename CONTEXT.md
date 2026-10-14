@@ -30,6 +30,10 @@ _Avoid_: write-up, blog post
 **Demo**:
 A featured project the visitor can open and use directly.
 
+**Other work**:
+A project linked in a single line below the featured projects, with no case study of its own.
+_Avoid_: side projects, misc
+
 **Home server**:
 Marcus's own Ubuntu machine that hosts the site behind a Cloudflare Tunnel.
 _Avoid_: VPS, cloud host
