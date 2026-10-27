@@ -136,14 +136,15 @@ BANNED_WORDS="first,second" node scripts/banned-words-guard.ts
 
 ### One-time setup (by hand)
 
-1. Create the public repo `Henakers/marcushenaker.se`, empty (no README, licence or `.gitignore`), so the first push of `main` fast-forwards.
+1. Create the public repo `Henakers/marcushenaker.se`, empty (no README, license or `.gitignore`), so the first push of `main` fast-forwards.
 2. Generate a key pair for the mirror only: `ssh-keygen -t ed25519 -N "" -C "portfolio mirror" -f mirror_key`.
 3. In `Henakers/marcushenaker.se` → Settings → Deploy keys, add `mirror_key.pub` with **Allow write access** ticked.
 4. In this repo → Settings → Secrets and variables → Actions, add:
    - `MIRROR_DEPLOY_KEY`: the contents of the private key `mirror_key`.
    - `BANNED_WORDS`: the banned words, one per line or comma-separated (case does not matter).
-5. Delete both key files locally.
-6. Prove the guard once: push a branch with a planted banned word, open a pull request, check that the `Banned-words guard` job fails without printing the word, and link that run from the pull request. Then delete the branch.
+5. Add `BANNED_WORDS` a second time, with the same value, under Settings → Secrets and variables → Dependabot. Workflows started by Dependabot pull requests cannot read Actions secrets, only Dependabot secrets, so without it the required `Banned-words guard` check fails on every Dependabot PR. `MIRROR_DEPLOY_KEY` stays an Actions secret only: the mirror never runs on pull requests.
+6. Delete both key files locally.
+7. Prove the guard once: push a branch with a planted banned word, open a pull request, check that the `Banned-words guard` job fails without printing the word, and link that run from the pull request. Then delete the branch.
 
 ## Layout
 
