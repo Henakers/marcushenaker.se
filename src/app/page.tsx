@@ -1,6 +1,6 @@
-import { About } from "@/components/home/About";
-import { ContactBand } from "@/components/home/ContactBand";
-import { OtherWork } from "@/components/home/OtherWork";
+import { About } from "@/components/home/about";
+import { ContactBand } from "@/components/home/contact-band";
+import { OtherWork } from "@/components/home/other-work";
 import { getContent } from "@/content";
 import { FeaturedProjects } from "@/components/featured-projects";
 import { Hero } from "@/components/hero";

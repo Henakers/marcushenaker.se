@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
-import { Footer } from "@/components/site/Footer";
-import { TopBar } from "@/components/site/TopBar";
+import { Footer } from "@/components/site/footer";
+import { TopBar } from "@/components/site/top-bar";
 import { getContent } from "@/content";
 import { baseOpenGraph } from "./metadata";
 import "./globals.css";

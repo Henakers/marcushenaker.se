@@ -1,6 +1,6 @@
 import type { Contact } from "@/content";
 
-const button =
+const buttonClass =
   "flex-1 rounded-lg border border-terminal-line px-5 py-3 text-center font-semibold text-white hover:border-terminal-accent";
 
 /** The dark "Let's talk." band. The address is plain text so it can be selected and copied. */
@@ -20,16 +20,16 @@ export function ContactBand({ heading, availability, email, linkedin, github, cv
             <span className="select-all">{email}</span>
           </p>
           <div className="flex flex-wrap gap-3">
-            <a href={`mailto:${email}`} className={button}>
+            <a href={`mailto:${email}`} className={buttonClass}>
               Email
             </a>
-            <a href={linkedin} className={button}>
+            <a href={linkedin} className={buttonClass}>
               LinkedIn
             </a>
-            <a href={github} className={button}>
+            <a href={github} className={buttonClass}>
               GitHub
             </a>
-            <a href="/Marcus-Henaker-CV.pdf" className={button}>
+            <a href="/Marcus-Henaker-CV.pdf" className={buttonClass}>
               {cvLabel}
             </a>
           </div>
