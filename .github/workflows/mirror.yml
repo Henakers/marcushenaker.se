@@ -28,6 +28,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          # The guard needs no dependencies; without this, setup-node reads
+          # packageManager from package.json and fails looking for pnpm.
+          package-manager-cache: false
 
       - name: Scan contents, paths and commit messages over the full history
         env:

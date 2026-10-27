@@ -82,7 +82,7 @@ describe("search metadata", () => {
         name: "Marcus Henåker",
         jobTitle: "Software Engineer",
         url: origin,
-        sameAs: [getContent().home().person.linkedin, "https://github.com/Henakers"],
+        sameAs: [getContent().home().contact.linkedin, "https://github.com/Henakers"],
         address: { "@type": "PostalAddress", addressLocality: "Gothenburg" },
       },
     ]);

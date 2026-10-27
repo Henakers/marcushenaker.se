@@ -3,10 +3,59 @@ import path from "node:path";
 import matter from "gray-matter";
 import { z } from "zod";
 
+const text = z.string().min(1);
+/** A site path ("/...", optionally "/#anchor") or an absolute https URL. */
+const link = z.string().regex(/^(\/|https:\/\/)/, "must be a site path or an https URL");
+const externalUrl = z.url({ protocol: /^https$/ });
+/** An image under `public/`, referenced by its site path. */
+const image = z.object({
+  src: z.string().regex(/^\/[^/]/, "must be a path under public/, starting with /"),
+  alt: text,
+});
+
 const homeSchema = z.object({
   headline: z.object({
-    title: z.string().min(1),
-    pitch: z.string().min(1),
+    title: text,
+    pitch: text,
+  }),
+  topBar: z.object({
+    name: text,
+    links: z.array(z.object({ label: text, href: link })).min(1),
+  }),
+  otherWork: z
+    .array(
+      z.object({
+        name: text,
+        line: text,
+        tags: z.array(text).min(2).max(3),
+        github: externalUrl,
+        live: externalUrl.optional(),
+        image: image.optional(),
+      }),
+    )
+    .min(1),
+  about: z.object({
+    photo: image,
+    paragraphs: z.array(text).min(1),
+    location: text,
+    skills: z.object({
+      languages: z.array(text).min(1),
+      data: z.array(text).min(1),
+      infrastructure: z.array(text).min(1),
+    }),
+    currentlyLearning: text,
+  }),
+  contact: z.object({
+    heading: text,
+    availability: text,
+    email: z.email(),
+    linkedin: externalUrl,
+    github: externalUrl,
+  }),
+  footer: z.object({
+    hostingNote: text,
+    repoUrl: externalUrl,
+    copyright: text,
   }),
   site: z.object({
     /** The apex origin every canonical URL, sitemap entry and JSON-LD url is built on. No trailing slash. */
@@ -14,16 +63,20 @@ const homeSchema = z.object({
     /** The home page's hand-written meta description. */
     description: z.string().min(1),
   }),
+  /** Who the site is about, for titles and the Person JSON-LD (whose sameAs links come from `contact`). */
   person: z.object({
-    name: z.string().min(1),
-    locality: z.string().min(1),
-    linkedin: z.url(),
-    github: z.url(),
+    name: text,
+    locality: text,
   }),
 });
 
 export type HomeContent = z.infer<typeof homeSchema>;
 export type Headline = HomeContent["headline"];
+export type TopBar = HomeContent["topBar"];
+export type OtherWorkEntry = HomeContent["otherWork"][number];
+export type About = HomeContent["about"];
+export type Contact = HomeContent["contact"];
+export type Footer = HomeContent["footer"];
 
 const caseStudySchema = z.object({
   slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "must be lower-case words joined by hyphens"),
@@ -205,7 +258,7 @@ export function loadContent(contentDir: string): Content {
       name: home.person.name,
       jobTitle: home.headline.title,
       url: home.site.url,
-      sameAs: [home.person.linkedin, home.person.github],
+      sameAs: [home.contact.linkedin, home.contact.github],
       address: { "@type": "PostalAddress", addressLocality: home.person.locality },
     }),
     sitemapEntries: () => [home.site.url, ...caseStudies.map((study) => caseStudyUrl(study.slug))],
