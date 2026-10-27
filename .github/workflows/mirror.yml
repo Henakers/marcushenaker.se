@@ -1,0 +1,68 @@
+name: Mirror
+
+# Mirrors main, with full history, to the public code-only repo
+# Henakers/marcushenaker.se. The banned-words guard must pass first.
+# The guard also runs on pull requests (and by hand on any branch) so a
+# planted banned word fails before it can reach main; only a push to main
+# mirrors.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Banned-words guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Scan contents, paths and commit messages over the full history
+        env:
+          BANNED_WORDS: ${{ secrets.BANNED_WORDS }}
+        run: node scripts/banned-words-guard.ts HEAD
+
+  mirror:
+    name: Mirror main to the public repo
+    needs: guard
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: mirror
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push main over the deploy key
+        env:
+          MIRROR_DEPLOY_KEY: ${{ secrets.MIRROR_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MIRROR_DEPLOY_KEY" ]; then
+            echo "MIRROR_DEPLOY_KEY is empty; refusing to mirror" >&2
+            exit 1
+          fi
+          ssh_dir="$RUNNER_TEMP/mirror-ssh"
+          mkdir -p "$ssh_dir"
+          printf '%s\n' "$MIRROR_DEPLOY_KEY" > "$ssh_dir/key"
+          chmod 600 "$ssh_dir/key"
+          # GitHub's published SSH host key, pinned rather than fetched with ssh-keyscan.
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$ssh_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $ssh_dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes"
+          # Push only main (not --mirror, which would push every branch).
+          git push git@github.com:Henakers/marcushenaker.se.git "$GITHUB_SHA:refs/heads/main"
