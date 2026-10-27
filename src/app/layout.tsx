@@ -1,6 +1,15 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
+import { getContent } from "@/content";
+import { baseOpenGraph } from "./metadata";
 import "./globals.css";
+
+// No canonical here: each page sets its own, and an inherited one would point every page at home.
+export const metadata: Metadata = {
+  metadataBase: new URL(getContent().siteUrl()),
+  openGraph: baseOpenGraph(),
+};
 
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
