@@ -14,17 +14,62 @@ type Frontmatter = Record<string, any>;
 const tempDirs: string[] = [];
 afterAll(() => tempDirs.forEach((dir) => fs.rmSync(dir, { recursive: true, force: true })));
 
-/** A fixture directory holding the valid home content with one change applied to its frontmatter. */
-function validHomeWith(change: (data: Frontmatter) => void): string {
-  const parsed = matter(fs.readFileSync(path.join(fixture("valid"), "home.mdx"), "utf8"));
+/** An MDX file's frontmatter and body, as a patch sees them. */
+interface MdxFile {
+  data: Frontmatter;
+  body: string;
+}
+
+function readFixtureMdx(file: string): MdxFile {
+  const parsed = matter(fs.readFileSync(file, "utf8"));
   // gray-matter caches parse results, so change a copy rather than the cached object.
-  const data = structuredClone(parsed.data);
-  change(data);
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "home-fixture-"));
+  return { data: structuredClone(parsed.data), body: parsed.content };
+}
+
+function writeMdx(file: string, { data, body }: MdxFile) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, matter.stringify(body, data));
+}
+
+interface Patch {
+  /** A change to the valid home frontmatter. */
+  home?: (data: Frontmatter) => void;
+  /**
+   * Replaces the valid Case studies with these files, keyed by file name. Each starts as a copy
+   * of the valid `gamma.mdx` with its slug set to the file name and a unique order, then the
+   * change is applied.
+   */
+  caseStudies?: Record<string, (study: MdxFile) => void>;
+}
+
+/** A temporary copy of the `valid` fixture with a patch applied, so every variant shares one source. */
+function validContentWith({ home, caseStudies }: Patch): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "content-fixture-"));
   tempDirs.push(dir);
-  fs.writeFileSync(path.join(dir, "home.mdx"), matter.stringify(parsed.content, data));
+  fs.cpSync(fixture("valid"), dir, { recursive: true });
+
+  if (home) {
+    const file = path.join(dir, "home.mdx");
+    const mdx = readFixtureMdx(file);
+    home(mdx.data);
+    writeMdx(file, mdx);
+  }
+  if (caseStudies) {
+    const studiesDir = path.join(dir, "case-studies");
+    fs.rmSync(studiesDir, { recursive: true });
+    Object.entries(caseStudies).forEach(([name, change], index) => {
+      const study = readFixtureMdx(path.join(fixture("valid"), "case-studies", "gamma.mdx"));
+      study.data.slug = path.basename(name, ".mdx");
+      study.data.order = index + 1;
+      change(study);
+      writeMdx(path.join(studiesDir, name), study);
+    });
+  }
   return dir;
 }
+
+/** A copy of the `valid` fixture with one change applied to the home frontmatter. */
+const validHomeWith = (change: (data: Frontmatter) => void) => validContentWith({ home: change });
 
 describe("content module: home", () => {
   it("returns the Headline from valid home content", () => {
@@ -125,9 +170,9 @@ describe("content module: home", () => {
   });
 
   it("throws an error naming the file and field when a field is missing", () => {
-    expect(() => loadContent(fixture("missing-pitch"))).toThrow(
-      /missing-pitch[\\/]home\.mdx.*headline\.pitch/,
-    );
+    const dir = validHomeWith((data) => delete data.headline.pitch);
+
+    expect(() => loadContent(dir)).toThrow('home.mdx: field "headline.pitch"');
   });
 
   it("throws an error naming the file when the home content is missing", () => {
@@ -160,20 +205,58 @@ describe("content module: case studies", () => {
   });
 
   it.each([
-    ["case-study-missing-description", "one.mdx", "description"],
-    ["case-study-empty-stack", "one.mdx", "stack"],
-    ["case-study-missing-terminal-value", "one.mdx", "terminal.value"],
-    ["case-study-slug-mismatch", "one.mdx", "slug"],
-    ["case-study-duplicate-order", "two.mdx", "order"],
-    ["case-study-missing-section", "one.mdx", "body"],
-    ["case-study-sections-out-of-order", "one.mdx", "body"],
-  ])("fails on %s with an error naming the file and field", (dir, file, field) => {
-    const error = captureError(() => loadContent(fixture(dir)));
+    ["a missing description", "one.mdx", "description", { "one.mdx": dropField("description") }],
+    ["an empty stack", "one.mdx", "stack", { "one.mdx": setField("stack", []) }],
+    [
+      "a missing terminal value",
+      "one.mdx",
+      "terminal.value",
+      { "one.mdx": ({ data }: MdxFile) => delete data.terminal.value },
+    ],
+    [
+      "a slug that is not the file name",
+      "one.mdx",
+      "slug",
+      { "one.mdx": setField("slug", "other") },
+    ],
+    [
+      "a duplicate order",
+      "two.mdx",
+      "order",
+      { "one.mdx": setField("order", 1), "two.mdx": setField("order", 1) },
+    ],
+    [
+      "a missing section",
+      "one.mdx",
+      "body",
+      {
+        "one.mdx": (study: MdxFile) => {
+          study.body = study.body.replace(/^## Constraints and what I rejected$/m, "");
+        },
+      },
+    ],
+    [
+      "sections out of order",
+      "one.mdx",
+      "body",
+      {
+        "one.mdx": (study: MdxFile) => {
+          study.body = study.body
+            .replace("## Problem", "## PLACEHOLDER")
+            .replace("## My role", "## Problem")
+            .replace("## PLACEHOLDER", "## My role");
+        },
+      },
+    ],
+  ])(
+    "fails on a Case study with %s, with an error naming the file and field",
+    (_, file, field, caseStudies) => {
+      const error = captureError(() => loadContent(validContentWith({ caseStudies })));
 
-    expect(error).toBeInstanceOf(ContentError);
-    expect(error.message).toContain(path.join(dir, "case-studies", file));
-    expect(error.message).toContain(`field "${field}"`);
-  });
+      expect(error).toBeInstanceOf(ContentError);
+      expect(error.message).toContain(`${path.join("case-studies", file)}: field "${field}"`);
+    },
+  );
 });
 
 describe("content module: page metadata", () => {
@@ -238,11 +321,19 @@ describe("content module: structured data and sitemap", () => {
   });
 
   it("rejects a site URL with a trailing slash, naming the field", () => {
-    expect(() => loadContent(fixture("site-url-trailing-slash"))).toThrow(
-      /site-url-trailing-slash[\\/]home\.mdx.*site\.url/,
-    );
+    const dir = validHomeWith((data) => (data.site.url = "https://fixture.example/"));
+
+    expect(() => loadContent(dir)).toThrow('home.mdx: field "site.url"');
   });
 });
+
+function dropField(field: string) {
+  return ({ data }: MdxFile) => delete data[field];
+}
+
+function setField(field: string, value: unknown) {
+  return ({ data }: MdxFile) => (data[field] = value);
+}
 
 function captureError(run: () => unknown): Error {
   try {
