@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
-import { PLEX_SANS_DIR, PLEX_SANS_FILES } from "@/fonts";
+import { PLEX_SANS_FILES } from "@/fonts";
 
 /** Open Graph images are 1200×630, the size LinkedIn, Slack and most messengers expect. */
 export const previewImageSize = { width: 1200, height: 630 };
@@ -33,7 +33,8 @@ async function plexSans() {
   return Promise.all(
     PLEX_SANS_FILES.map(async ({ weight, file }) => ({
       name: "IBM Plex Sans",
-      data: await readFile(path.join(process.cwd(), PLEX_SANS_DIR, file)),
+      // PLEX_SANS_DIR spelled out: Turbopack only traces a literal path, not the whole project.
+      data: await readFile(path.join(process.cwd(), "assets", "fonts", file)),
       weight,
       style: "normal" as const,
     })),
