@@ -41,3 +41,31 @@ jobs:
 
       - name: Test the built site over HTTP (seam 2)
         run: pnpm test:e2e
+
+  container:
+    runs-on: ubuntu-latest
+    env:
+      # Tag the locally built image so it never shadows a pulled `main` image.
+      IMAGE_TAG: ci
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the image and wait for the container to become healthy
+        run: docker compose -f compose.yaml -f compose.build.yaml up --detach --wait --wait-timeout 120
+
+      - name: Check the container runs as node, not root
+        run: test "$(docker compose exec -T web whoami)" = node
+
+      - name: Check the port is published on 127.0.0.1:3001 only
+        run: test "$(docker compose port web 3000)" = 127.0.0.1:3001
+
+      - name: Check the site answers through the published port
+        run: curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3001/
+
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop the container
+        if: always()
+        run: docker compose down
