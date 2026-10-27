@@ -8,10 +8,21 @@
   --color-page: #fafaf9;
   --color-ink: #1c1917;
   --color-muted: #57534e;
+  --color-subtle: #78716c;
+  --color-faint: #a8a29e;
   --color-rule: #e7e5e4;
+  --color-chip: #f5f5f4;
   --color-accent: #15803d;
   --color-terminal: #0d1117;
+  --color-terminal-raised: #161b22;
+  --color-terminal-line: #30363d;
+  --color-terminal-text: #c9d1d9;
+  --color-terminal-muted: #8b949e;
   --color-terminal-accent: #3fb950;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {

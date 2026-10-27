@@ -3,15 +3,69 @@ import path from "node:path";
 import matter from "gray-matter";
 import { z } from "zod";
 
+const text = z.string().min(1);
+/** A site path ("/...", optionally "/#anchor") or an absolute https URL. */
+const link = z.string().regex(/^(\/|https:\/\/)/, "must be a site path or an https URL");
+const externalUrl = z.url({ protocol: /^https$/ });
+/** An image under `public/`, referenced by its site path. */
+const image = z.object({
+  src: z.string().regex(/^\/[^/]/, "must be a path under public/, starting with /"),
+  alt: text,
+});
+
 const homeSchema = z.object({
   headline: z.object({
-    title: z.string().min(1),
-    pitch: z.string().min(1),
+    title: text,
+    pitch: text,
+  }),
+  topBar: z.object({
+    name: text,
+    links: z.array(z.object({ label: text, href: link })).min(1),
+  }),
+  otherWork: z
+    .array(
+      z.object({
+        name: text,
+        line: text,
+        tags: z.array(text).min(2).max(3),
+        github: externalUrl,
+        live: externalUrl.optional(),
+        image: image.optional(),
+      }),
+    )
+    .min(1),
+  about: z.object({
+    photo: image,
+    paragraphs: z.array(text).min(1),
+    location: text,
+    skills: z.object({
+      languages: z.array(text).min(1),
+      data: z.array(text).min(1),
+      infrastructure: z.array(text).min(1),
+    }),
+    currentlyLearning: text,
+  }),
+  contact: z.object({
+    heading: text,
+    availability: text,
+    email: z.email(),
+    linkedin: externalUrl,
+    github: externalUrl,
+  }),
+  footer: z.object({
+    hostingNote: text,
+    repoUrl: externalUrl,
+    copyright: text,
   }),
 });
 
 export type HomeContent = z.infer<typeof homeSchema>;
 export type Headline = HomeContent["headline"];
+export type TopBar = HomeContent["topBar"];
+export type OtherWorkEntry = HomeContent["otherWork"][number];
+export type About = HomeContent["about"];
+export type Contact = HomeContent["contact"];
+export type Footer = HomeContent["footer"];
 
 export interface Content {
   home(): HomeContent;
