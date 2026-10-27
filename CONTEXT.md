@@ -27,6 +27,10 @@ _Avoid_: tagline, slogan, bio
 A written account of a featured project that cannot be shown or run as-is (for example, internal work automations), describing the problem, approach and outcome.
 _Avoid_: write-up, blog post
 
+**Other work**:
+Smaller projects listed briefly on the home page with links, without a case study; deliberately lighter than featured projects.
+_Avoid_: side projects, minor projects
+
 **Demo**:
 A featured project the visitor can open and use directly.
 
