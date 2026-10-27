@@ -12,11 +12,7 @@ export async function generateMetadata({ params }: PageProps<"/work/[slug]">) {
   return metadata ? toNextMetadata(metadata) : {};
 }
 
-export function generateStaticParams() {
-  return getContent()
-    .caseStudies()
-    .map(({ slug }) => ({ slug }));
-}
+export { generateStaticParams } from "./static-params";
 
 export default async function CaseStudyPage({ params }: PageProps<"/work/[slug]">) {
   const { slug } = await params;

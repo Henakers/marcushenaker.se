@@ -242,13 +242,18 @@ export function loadContent(contentDir: string): Content {
   const home = readFrontmatter(path.join(contentDir, "home.mdx"), homeSchema);
   const caseStudies = loadCaseStudies(path.join(contentDir, "case-studies"));
   const caseStudyUrl = (slug: string) => `${home.site.url}/work/${slug}`;
+  /** The Case study with this slug and the one after it in order (wrapping), or undefined. */
+  const findCaseStudy = (slug: string) => {
+    const index = caseStudies.findIndex((study) => study.slug === slug);
+    if (index === -1) return undefined;
+    return { study: caseStudies[index]!, next: caseStudies[(index + 1) % caseStudies.length]! };
+  };
   return {
     home: () => home,
     caseStudies: () => caseStudies,
     caseStudy: (slug) => {
-      const index = caseStudies.findIndex((study) => study.slug === slug);
-      if (index === -1) return undefined;
-      return { ...caseStudies[index]!, next: caseStudies[(index + 1) % caseStudies.length]! };
+      const found = findCaseStudy(slug);
+      return found && { ...found.study, next: found.next };
     },
     homeMetadata: () => ({
       title: `${home.person.name} – ${home.headline.title}`,
@@ -256,7 +261,7 @@ export function loadContent(contentDir: string): Content {
       canonical: home.site.url,
     }),
     caseStudyMetadata: (slug) => {
-      const study = caseStudies.find((candidate) => candidate.slug === slug);
+      const study = findCaseStudy(slug)?.study;
       if (!study) return undefined;
       return {
         title: `${study.title} – ${home.person.name}`,

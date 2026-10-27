@@ -12,16 +12,10 @@ import { pathToFileURL } from "node:url";
 import matter from "gray-matter";
 import { chromium } from "playwright";
 import { z } from "zod";
+import { PLEX_SANS_DIR, PLEX_SANS_FILES } from "../src/fonts.ts";
 
 const SOURCE = "content/cv/cv.md";
 const OUTPUT = "public/Marcus-Henaker-CV.pdf";
-// The same IBM Plex Sans files the preview images use.
-const FONT_DIR = "assets/fonts";
-const FONTS = {
-  400: "IBMPlexSans-Regular.woff",
-  600: "IBMPlexSans-SemiBold.woff",
-  700: "IBMPlexSans-Bold.woff",
-};
 const ACCENT = "#15803d";
 
 const text = z.string().min(1);
@@ -85,12 +79,11 @@ function link(href: string): string {
 }
 
 function fontFaces(): string {
-  return Object.entries(FONTS)
-    .map(([weight, name]) => {
-      const file = path.resolve(FONT_DIR, name);
-      return `@font-face { font-family: "IBM Plex Sans"; font-weight: ${weight}; src: url("${pathToFileURL(file).href}") format("woff"); }`;
-    })
-    .join("\n");
+  // The same IBM Plex Sans files the preview images use.
+  return PLEX_SANS_FILES.map(({ weight, file: name }) => {
+    const file = path.resolve(PLEX_SANS_DIR, name);
+    return `@font-face { font-family: "IBM Plex Sans"; font-weight: ${weight}; src: url("${pathToFileURL(file).href}") format("woff"); }`;
+  }).join("\n");
 }
 
 function renderHtml(cv: Cv, updated: string): string {

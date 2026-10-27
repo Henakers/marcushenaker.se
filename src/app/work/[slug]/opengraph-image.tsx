@@ -14,11 +14,7 @@ export const contentType = previewImageContentType;
 // rendered at build time, and an unknown slug is a 404 rather than a render on request.
 export const dynamicParams = false;
 
-export function generateStaticParams() {
-  return getContent()
-    .caseStudies()
-    .map(({ slug }) => ({ slug }));
-}
+export { generateStaticParams } from "./static-params";
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

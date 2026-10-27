@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
+import { PLEX_SANS_DIR, PLEX_SANS_FILES } from "@/fonts";
 
 /** Open Graph images are 1200×630, the size LinkedIn, Slack and most messengers expect. */
 export const previewImageSize = { width: 1200, height: 630 };
@@ -27,19 +28,12 @@ const colors = {
   accent: "#15803d",
 };
 
-const FONT_DIR = path.join(process.cwd(), "assets", "fonts");
-
 /** IBM Plex Sans as woff: ImageResponse cannot read the woff2 files `next/font` serves. */
 async function plexSans() {
-  const weights = [
-    [400, "IBMPlexSans-Regular.woff"],
-    [600, "IBMPlexSans-SemiBold.woff"],
-    [700, "IBMPlexSans-Bold.woff"],
-  ] as const;
   return Promise.all(
-    weights.map(async ([weight, file]) => ({
+    PLEX_SANS_FILES.map(async ({ weight, file }) => ({
       name: "IBM Plex Sans",
-      data: await readFile(path.join(FONT_DIR, file)),
+      data: await readFile(path.join(process.cwd(), PLEX_SANS_DIR, file)),
       weight,
       style: "normal" as const,
     })),
