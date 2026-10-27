@@ -8,6 +8,12 @@ const homeSchema = z.object({
     title: z.string().min(1),
     pitch: z.string().min(1),
   }),
+  /** The hero's status line and its two button labels. */
+  hero: z.object({
+    status: z.string().min(1),
+    cvLabel: z.string().min(1),
+    contactLabel: z.string().min(1),
+  }),
 });
 
 export type HomeContent = z.infer<typeof homeSchema>;

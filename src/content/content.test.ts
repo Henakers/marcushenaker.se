@@ -14,6 +14,22 @@ describe("content module: home", () => {
     });
   });
 
+  it("returns the hero's status line and button labels", () => {
+    const content = loadContent(fixture("valid"));
+
+    expect(content.home().hero).toEqual({
+      status: "fixture status",
+      cvLabel: "Fixture CV",
+      contactLabel: "Fixture contact",
+    });
+  });
+
+  it("throws an error naming the file and field when a hero label is missing", () => {
+    expect(() => loadContent(fixture("missing-hero-label"))).toThrow(
+      /missing-hero-label[\\/]home\.mdx.*hero\.contactLabel/,
+    );
+  });
+
   it("throws an error naming the file and field when a field is missing", () => {
     expect(() => loadContent(fixture("missing-pitch"))).toThrow(
       /missing-pitch[\\/]home\.mdx.*headline\.pitch/,
