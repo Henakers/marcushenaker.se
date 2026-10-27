@@ -47,6 +47,23 @@ IMAGE_TAG=local docker compose down
 
 `--wait` returns once the healthcheck (a `node -e` fetch of `/`) passes. CI runs the same build and health check on every pull request and every push to `main`.
 
+## Publish the image
+
+The `publish` job in `.github/workflows/ci.yml` pushes the image to `ghcr.io/henakers/portfolio` after the `check` and `container` jobs pass. It runs only on `main`:
+
+- on every push to `main`;
+- weekly (Monday 04:17 UTC), rebuilding without the layer cache so base-image patches land without code changes;
+- on demand through "Run workflow" (`workflow_dispatch`) on `main`.
+
+Each publish tags the image `sha-<7-char commit SHA>` and `main`. There is no `latest` tag. Pull requests build and health-check the image but never push it.
+
+Dependabot (`.github/dependabot.yml`) opens weekly PRs for npm packages, the Docker base image (staying on Node 24) and GitHub Actions versions. They go through the same checks and are merged by hand.
+
+### One-time setup (by hand)
+
+1. **Make the GHCR package public.** After the first publish, open the `portfolio` package under the account's Packages, then Package settings → Danger Zone → Change visibility → Public, so the **Home server** can pull without credentials.
+2. **Protect `main`.** In the repo's Settings → Branches (or Rules → Rulesets), add a rule for `main` that requires a pull request before merging and requires these status checks to pass: `check` and `container` (both from the `CI` workflow). Do not require `publish`: it is skipped on pull requests.
+
 ## Layout
 
 - `content/`: the site's content as MDX with YAML frontmatter, the single source of truth (see `docs/adr/0001-mdx-source-pgvector-index.md`).
