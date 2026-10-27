@@ -29,7 +29,8 @@ const NEW = "sha256:222222222222222222222222222222222222222222222222222222222222
  * A fake `docker` CLI. It keeps the running digest, the local `:main` digest and the
  * registry's `:main` digest as files in $FAKE_STATE, logs every call, and fails
  * `compose up` for any digest listed in $FAKE_STATE/broken. `compose up` hangs for any
- * digest listed in $FAKE_STATE/hanging.
+ * digest listed in $FAKE_STATE/hanging. `compose pull` fails while $FAKE_STATE/pull-fails
+ * exists.
  */
 const fakeDocker = `#!/usr/bin/env bash
 set -euo pipefail
@@ -53,6 +54,10 @@ case "$*" in
     if [[ -z "$digest" ]]; then echo "No such image: $last" >&2; exit 1; fi
     echo "${IMAGE}@$digest" ;;
   "compose pull --quiet web")
+    if [[ -f "$state/pull-fails" ]]; then
+      echo "error from registry: unauthorized" >&2
+      exit 1
+    fi
     read_state remote > "$state/local" ;;
   "buildx imagetools inspect "*)
     read_state remote ;;
@@ -90,6 +95,7 @@ function createServer(initial: {
   broken?: string[];
   hanging?: string[];
   waitTimeout?: number;
+  pullFails?: boolean;
 }) {
   const root = mkdtempSync(join(tmpdir(), "portfolio-deploy-"));
   dirs.push(root);
@@ -107,6 +113,7 @@ function createServer(initial: {
   writeFileSync(join(fake, "remote"), initial.remote);
   writeFileSync(join(fake, "broken"), (initial.broken ?? []).join("\n") + "\n");
   writeFileSync(join(fake, "hanging"), (initial.hanging ?? []).join("\n") + "\n");
+  if (initial.pullFails) writeFileSync(join(fake, "pull-fails"), "");
 
   const read = (name: string) => {
     const file = join(fake, name);
@@ -229,6 +236,30 @@ describe.skipIf(!bash)("deploy.sh", () => {
     expect(server.upDigests()).toEqual([NEW, OLD]);
     expect(server.pushes()).toHaveLength(1);
     expect(result.output).toContain("Rollback");
+  });
+
+  it("pushes a notification and fails when the pull fails, leaving the running container alone", () => {
+    const server = createServer({ running: OLD, remote: NEW, pullFails: true });
+
+    const result = server.run();
+
+    expect(result.status).not.toBe(0);
+    expect(server.upDigests()).toEqual([]);
+    expect(server.running()).toBe(OLD);
+    expect(server.pushes()).toHaveLength(1);
+    expect(server.pushes()[0]).toContain("https://ntfy.example/portfolio-test");
+  });
+
+  it("pushes a notification and fails when the pulled image's digest cannot be read", () => {
+    const server = createServer({ running: OLD, remote: "" });
+
+    const result = server.run();
+
+    expect(result.status).not.toBe(0);
+    expect(server.upDigests()).toEqual([]);
+    expect(server.running()).toBe(OLD);
+    expect(server.pushes()).toHaveLength(1);
+    expect(result.output).toContain("Could not read the digest");
   });
 
   it("prints what it would deploy in a dry run without pulling or changing anything", () => {

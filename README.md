@@ -83,12 +83,12 @@ Dependabot (`.github/dependabot.yml`) opens weekly PRs for npm packages, the Doc
 
 Every 5 minutes `portfolio-deploy.timer` starts `portfolio-deploy.service`, which runs `deploy.sh`:
 
-1. It records the digest of the running `web` container, then runs `docker compose pull web`.
+1. It records the digest of the running `web` container, then runs `docker compose pull --quiet web`. If the pull fails, or the pulled image's digest cannot be read, it sends an ntfy push and exits non-zero, leaving the running container alone.
 2. If the pulled digest is the one already running, it stops there. A new digest without a code change (the weekly rebuild) is a normal deploy.
 3. Otherwise it runs `docker compose up --detach --wait`, which relies on the healthcheck in `compose.yaml`, with a 60 s limit.
 4. If the new container is not healthy in time, it restarts the previous digest (`IMAGE_TAG=<tag>@sha256:...` for that one run, so `compose.yaml` stays the source of the service's configuration), marks the new digest bad, sends an ntfy push and exits non-zero. Later runs skip a bad digest until a newer image is published.
 
-Digests are compared by repo digest (`docker image inspect --format '{{index .RepoDigests 0}}'`), not image ID, because `:main` is a manifest list.
+Digests are compared by repo digest, not image ID, because `:main` is a manifest list. For both the running container's image and the pulled `:main`, the script takes the first line of `docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}'` and keeps the `sha256:...` part after the `@`. A dry run takes the pulled side from the registry instead (`{{.Manifest.Digest}}` from `docker buildx imagetools inspect`).
 
 ### Install (by hand)
 

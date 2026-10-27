@@ -20,7 +20,8 @@ Usage: deploy.sh [--dry-run]
 
 Pulls the service's image and recreates the container only when the digest changed.
 If the new container is not healthy in time, restarts the previous digest, marks the
-new digest bad so later runs skip it, sends an ntfy push and exits non-zero.
+new digest bad so later runs skip it, sends an ntfy push and exits non-zero. A failed
+pull or an unreadable digest also sends a push and exits non-zero.
 
   -n, --dry-run   print what would happen without pulling or changing anything
   -h, --help      show this help
@@ -63,6 +64,14 @@ notify() {
     --header "Title: $title" --header "Priority: high" --header "Tags: warning" \
     --data "$message" "$NTFY_URL" >/dev/null ||
     log "Could not send the ntfy push."
+}
+
+# Logs a failure before any container changed, pushes it unless this is a dry run, and
+# exits non-zero.
+fail() {
+  log "$1" >&2
+  if [[ "$dry_run" != true ]]; then notify "Portfolio deploy failed" "$1"; fi
+  exit 1
 }
 
 # The digest part (sha256:...) of an image's first repo digest. The image is a manifest
@@ -109,16 +118,16 @@ tag="${tag##*:}"
 running="$(running_digest)"
 log "Running: ${running:-nothing}."
 
+# `|| new=""` keeps `set -e` from exiting before the failure is pushed.
 if [[ "$dry_run" == true ]]; then
   # Ask the registry instead of pulling, so not even the local `:main` tag moves.
-  new="$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "$ref")"
+  new="$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "$ref")" || new=""
 else
-  docker compose pull --quiet "$SERVICE"
-  new="$(repo_digest "$ref")"
+  docker compose pull --quiet "$SERVICE" || fail "Could not pull $ref; ${running:-nothing} keeps running."
+  new="$(repo_digest "$ref")" || new=""
 fi
 if [[ -z "$new" ]]; then
-  log "Could not read the digest of $ref." >&2
-  exit 1
+  fail "Could not read the digest of $ref; ${running:-nothing} keeps running."
 fi
 
 if [[ "$new" == "$running" ]]; then
