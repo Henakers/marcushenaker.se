@@ -18,7 +18,7 @@ export function FeaturedProjects({ caseStudies }: { caseStudies: CaseStudy[] }) 
             <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{study.problem}</p>
             <p className="mt-5 font-semibold text-accent">{study.result}</p>
             <ul className="mt-4 flex flex-wrap gap-1.5">
-              {study.stack.slice(0, 4).map((tag) => (
+              {study.stack.map((tag) => (
                 <li key={tag} className="rounded bg-chip px-2 py-1 font-mono text-xs">
                   {tag}
                 </li>

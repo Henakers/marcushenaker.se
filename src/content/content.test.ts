@@ -207,6 +207,13 @@ describe("content module: case studies", () => {
   it.each([
     ["a missing description", "one.mdx", "description", { "one.mdx": dropField("description") }],
     ["an empty stack", "one.mdx", "stack", { "one.mdx": setField("stack", []) }],
+    ["two stack tags", "one.mdx", "stack", { "one.mdx": setField("stack", ["Go", "SQL"]) }],
+    [
+      "five stack tags",
+      "one.mdx",
+      "stack",
+      { "one.mdx": setField("stack", ["Go", "SQL", "Docker", "Linux", "Git"]) },
+    ],
     [
       "a missing terminal value",
       "one.mdx",

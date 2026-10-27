@@ -99,7 +99,8 @@ const caseStudySchema = z.object({
   description: z.string().min(1),
   role: z.string().min(1),
   period: z.string().min(1),
-  stack: z.array(z.string().min(1)).min(1),
+  /** The stack tags on the card and the page: three or four. */
+  stack: z.array(z.string().min(1)).min(3).max(4),
   outcome: z.string().min(1),
   /** The Case study's row in the hero terminal panel: its SQL query and the output it shows. */
   terminal: z.object({
