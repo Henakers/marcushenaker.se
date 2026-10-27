@@ -33,6 +33,20 @@ pnpm build
 pnpm start        # runs .next/standalone/server.js on port 3000
 ```
 
+## Run the container
+
+The site ships as a container image (`Dockerfile`, multi-stage on `node:24-alpine`, running as the non-root `node` user). `compose.yaml` runs it as the `web` service on `127.0.0.1:3001`, pulling `ghcr.io/henakers/portfolio:${IMAGE_TAG:-main}`.
+
+To test a locally built image instead of the published one, add the `compose.build.yaml` override, which builds from this checkout. Set `IMAGE_TAG` so the local build never overwrites a pulled `main` image:
+
+```sh
+IMAGE_TAG=local docker compose -f compose.yaml -f compose.build.yaml up --detach --wait
+curl http://127.0.0.1:3001/
+IMAGE_TAG=local docker compose down
+```
+
+`--wait` returns once the healthcheck (a `node -e` fetch of `/`) passes. CI runs the same build and health check on every pull request and every push to `main`.
+
 ## Layout
 
 - `content/`: the site's content as MDX with YAML frontmatter, the single source of truth (see `docs/adr/0001-mdx-source-pgvector-index.md`).
