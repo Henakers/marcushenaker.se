@@ -14,7 +14,7 @@ contact:
 summary: "[placeholder] Software engineer focused on backend and data engineering. I build the pipelines, integrations and validation that give analytics and AI accurate, trustworthy data."
 experience:
   - role: Master Data Manager
-    organisation: "[placeholder] Employer"
+    organization: "[placeholder] Employer"
     period: 2026–present
     bullets:
       - "[placeholder] Sole owner of product data quality across internal systems and customer feeds."
@@ -22,13 +22,13 @@ experience:
       - "[placeholder] Designed a supplier data pipeline with a canonical schema, per-supplier adapters and GTIN matching."
       - "[placeholder] Applied GS1 standards and automated validation, catching errors before customers ordered the wrong articles."
   - role: E-commerce Entrepreneur
-    organisation: Own Shopify business
+    organization: Own Shopify business
     period: 2023–2025
     bullets:
       - "[placeholder] Used sales and traffic data to drive pricing and marketing decisions."
       - "[placeholder] Chose and retired products based on measured margins and demand."
   - role: Assembly Technician
-    organisation: "[placeholder] Previous employer"
+    organization: "[placeholder] Previous employer"
     period: "[placeholder] Years"
     bullets:
       - "[placeholder] One line on the role."

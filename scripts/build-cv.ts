@@ -42,7 +42,7 @@ const cvSchema = z.object({
     .array(
       z.object({
         role: text,
-        organisation: text,
+        organization: text,
         period: text,
         bullets: z.array(text).min(1),
       }),
@@ -110,7 +110,7 @@ function renderHtml(cv: Cv, updated: string): string {
     .map(
       (job) => `
       <div class="entry">
-        <div class="entry-head"><span><strong>${esc(job.role)}</strong>, ${esc(job.organisation)}</span><span class="period">${esc(job.period)}</span></div>
+        <div class="entry-head"><span><strong>${esc(job.role)}</strong>, ${esc(job.organization)}</span><span class="period">${esc(job.period)}</span></div>
         <ul>${job.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>
       </div>`,
     )

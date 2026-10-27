@@ -48,7 +48,7 @@ function jsonLd(html: string): unknown[] {
 }
 
 describe("search metadata", () => {
-  it("titles home, describes it, and canonicalises it to the apex origin", async () => {
+  it("titles home, describes it, and canonicalizes it to the apex origin", async () => {
     const { status, html } = await page("/");
 
     expect(status).toBe(200);

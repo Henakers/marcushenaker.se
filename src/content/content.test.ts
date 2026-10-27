@@ -142,14 +142,14 @@ describe("content module: case studies", () => {
     expect(content.caseStudies().map((study) => study.slug)).toEqual(["gamma", "alpha", "beta"]);
   });
 
-  it("gets one Case study by slug, with the next one in order as its neighbour", () => {
+  it("gets one Case study by slug, with the next one in order as its neighbor", () => {
     const study = loadContent(fixture("valid")).caseStudy("gamma");
 
     expect(study?.title).toBe("Gamma study");
     expect(study?.next.slug).toBe("alpha");
   });
 
-  it("wraps the next neighbour from the last Case study to the first", () => {
+  it("wraps the next neighbor from the last Case study to the first", () => {
     const study = loadContent(fixture("valid")).caseStudy("beta");
 
     expect(study?.next.slug).toBe("gamma");

@@ -17,8 +17,8 @@ interface PreviewImageProps {
   footer?: string;
 }
 
-// Variant E's tokens (stone greys, one green accent).
-const colours = {
+// Variant E's tokens (stone grays, one green accent).
+const colors = {
   bg: "#fafaf9",
   ink: "#1c1917",
   muted: "#57534e",
@@ -57,14 +57,14 @@ export async function previewImage({ kicker, heading, detail, tone, footer }: Pr
         flexDirection: "column",
         justifyContent: footer ? "space-between" : "center",
         padding: "72px 80px",
-        backgroundColor: colours.bg,
-        borderTop: `16px solid ${colours.accent}`,
-        color: colours.ink,
+        backgroundColor: colors.bg,
+        borderTop: `16px solid ${colors.accent}`,
+        color: colors.ink,
         fontFamily: "IBM Plex Sans",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 30, fontWeight: 600, color: colours.faint }}>{kicker}</div>
+        <div style={{ fontSize: 30, fontWeight: 600, color: colors.faint }}>{kicker}</div>
         <div
           style={{
             marginTop: 28,
@@ -82,7 +82,7 @@ export async function previewImage({ kicker, heading, detail, tone, footer }: Pr
             fontSize: tone === "accent" ? 40 : 34,
             fontWeight: tone === "accent" ? 600 : 400,
             lineHeight: 1.4,
-            color: tone === "accent" ? colours.accent : colours.muted,
+            color: tone === "accent" ? colors.accent : colors.muted,
           }}
         >
           {detail}
@@ -93,7 +93,7 @@ export async function previewImage({ kicker, heading, detail, tone, footer }: Pr
           style={{
             display: "flex",
             paddingTop: 28,
-            borderTop: `1px solid ${colours.line}`,
+            borderTop: `1px solid ${colors.line}`,
             fontSize: 30,
             fontWeight: 600,
           }}

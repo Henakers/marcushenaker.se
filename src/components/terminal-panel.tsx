@@ -15,7 +15,7 @@ const SQL_KEYWORDS = new Set([
   "LIMIT",
 ]);
 
-/** Splits a query on whitespace and colours the SQL keywords, keeping the spacing as written. */
+/** Splits a query on whitespace and colors the SQL keywords, keeping the spacing as written. */
 function HighlightedQuery({ query }: { query: string }) {
   return query.split(/(\s+)/).map((part, i) =>
     SQL_KEYWORDS.has(part) ? (
