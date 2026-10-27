@@ -19,6 +19,7 @@
   --color-terminal-text: #c9d1d9;
   --color-terminal-muted: #8b949e;
   --color-terminal-accent: #3fb950;
+  --color-terminal-keyword: #ff7b72;
 }
 
 html {

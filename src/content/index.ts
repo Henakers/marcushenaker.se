@@ -18,6 +18,12 @@ const homeSchema = z.object({
     title: text,
     pitch: text,
   }),
+  /** The hero's status line and its two button labels. */
+  hero: z.object({
+    status: text,
+    cvLabel: text,
+    contactLabel: text,
+  }),
   topBar: z.object({
     name: text,
     links: z.array(z.object({ label: text, href: link })).min(1),
@@ -61,6 +67,7 @@ const homeSchema = z.object({
 
 export type HomeContent = z.infer<typeof homeSchema>;
 export type Headline = HomeContent["headline"];
+export type Hero = HomeContent["hero"];
 export type TopBar = HomeContent["topBar"];
 export type OtherWorkEntry = HomeContent["otherWork"][number];
 export type About = HomeContent["about"];

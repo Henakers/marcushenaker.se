@@ -36,6 +36,16 @@ describe("content module: home", () => {
     });
   });
 
+  it("returns the hero's status line and button labels", () => {
+    const content = loadContent(fixture("valid"));
+
+    expect(content.home().hero).toEqual({
+      status: "fixture status",
+      cvLabel: "Fixture CV",
+      contactLabel: "Fixture contact",
+    });
+  });
+
   it("returns the top bar, Other work, About, contact band and footer from valid home content", () => {
     const home = loadContent(fixture("valid")).home();
 
@@ -104,6 +114,7 @@ describe("content module: home", () => {
     ["contact.email", (data: Frontmatter) => (data.contact.email = "not-an-email")],
     ["contact.availability", (data: Frontmatter) => delete data.contact.availability],
     ["footer.repoUrl", (data: Frontmatter) => delete data.footer.repoUrl],
+    ["hero.contactLabel", (data: Frontmatter) => delete data.hero.contactLabel],
     ["topBar.links.0.href", (data: Frontmatter) => (data.topBar.links[0].href = "#work")],
   ])("throws an error naming home.mdx and %s when it is invalid", (field, change) => {
     const dir = validHomeWith(change);
