@@ -14,6 +14,12 @@ describe("content module: home", () => {
     });
   });
 
+  it("returns Marcus's name from valid home content", () => {
+    const content = loadContent(fixture("valid"));
+
+    expect(content.home().name).toBe("Fixture Name");
+  });
+
   it("throws an error naming the file and field when a field is missing", () => {
     expect(() => loadContent(fixture("missing-pitch"))).toThrow(
       /missing-pitch[\\/]home\.mdx.*headline\.pitch/,

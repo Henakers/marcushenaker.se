@@ -4,6 +4,8 @@ import matter from "gray-matter";
 import { z } from "zod";
 
 const homeSchema = z.object({
+  /** Marcus's full name, as shown in the top bar and on preview images. */
+  name: z.string().min(1),
   headline: z.object({
     title: z.string().min(1),
     pitch: z.string().min(1),
