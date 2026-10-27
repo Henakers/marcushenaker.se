@@ -36,6 +36,16 @@ describe("content module: home", () => {
     });
   });
 
+  it("returns the hero's status line and button labels", () => {
+    const content = loadContent(fixture("valid"));
+
+    expect(content.home().hero).toEqual({
+      status: "fixture status",
+      cvLabel: "Fixture CV",
+      contactLabel: "Fixture contact",
+    });
+  });
+
   it("returns the top bar, Other work, About, contact band and footer from valid home content", () => {
     const home = loadContent(fixture("valid")).home();
 
@@ -104,6 +114,7 @@ describe("content module: home", () => {
     ["contact.email", (data: Frontmatter) => (data.contact.email = "not-an-email")],
     ["contact.availability", (data: Frontmatter) => delete data.contact.availability],
     ["footer.repoUrl", (data: Frontmatter) => delete data.footer.repoUrl],
+    ["hero.contactLabel", (data: Frontmatter) => delete data.hero.contactLabel],
     ["topBar.links.0.href", (data: Frontmatter) => (data.topBar.links[0].href = "#work")],
   ])("throws an error naming home.mdx and %s when it is invalid", (field, change) => {
     const dir = validHomeWith(change);
@@ -160,6 +171,74 @@ describe("content module: case studies", () => {
     expect(error).toBeInstanceOf(ContentError);
     expect(error.message).toContain(path.join(dir, "case-studies", file));
     expect(error.message).toContain(`field "${field}"`);
+  });
+});
+
+describe("content module: page metadata", () => {
+  it("gives home its title, hand-written description and the apex canonical URL", () => {
+    const content = loadContent(fixture("valid"));
+
+    expect(content.homeMetadata()).toEqual({
+      title: "Fixture Person – Fixture Engineer",
+      description: "Fixture home description for search results.",
+      canonical: "https://fixture.example",
+    });
+  });
+
+  it("gives a Case study its title template, its own description and a canonical URL under /work", () => {
+    const content = loadContent(fixture("valid"));
+
+    expect(content.caseStudyMetadata("gamma")).toEqual({
+      title: "Gamma study – Fixture Person",
+      description: "Fixture description for gamma.",
+      canonical: "https://fixture.example/work/gamma",
+    });
+  });
+
+  it("has no Case study metadata for an unknown slug", () => {
+    expect(loadContent(fixture("valid")).caseStudyMetadata("no-such-study")).toBeUndefined();
+  });
+
+  it("titles the 404 page and gives it no canonical URL", () => {
+    expect(loadContent(fixture("valid")).notFoundMetadata()).toEqual({
+      title: "Page not found – Fixture Person",
+    });
+  });
+});
+
+describe("content module: structured data and sitemap", () => {
+  it("describes Marcus as a schema.org Person with the agreed fields and no employer", () => {
+    const jsonLd = loadContent(fixture("valid")).personJsonLd();
+
+    expect(jsonLd).toEqual({
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: "Fixture Person",
+      jobTitle: "Fixture Engineer",
+      url: "https://fixture.example",
+      sameAs: ["https://www.linkedin.com/in/fixture", "https://github.com/fixture"],
+      address: { "@type": "PostalAddress", addressLocality: "Fixture Town" },
+    });
+    expect(jsonLd).not.toHaveProperty("worksFor");
+  });
+
+  it("lists home plus every Case study in the sitemap, and nothing else", () => {
+    expect(loadContent(fixture("valid")).sitemapEntries()).toEqual([
+      "https://fixture.example",
+      "https://fixture.example/work/gamma",
+      "https://fixture.example/work/alpha",
+      "https://fixture.example/work/beta",
+    ]);
+  });
+
+  it("gives the site origin for resolving URLs and pointing robots.txt at the sitemap", () => {
+    expect(loadContent(fixture("valid")).siteUrl()).toBe("https://fixture.example");
+  });
+
+  it("rejects a site URL with a trailing slash, naming the field", () => {
+    expect(() => loadContent(fixture("site-url-trailing-slash"))).toThrow(
+      /site-url-trailing-slash[\\/]home\.mdx.*site\.url/,
+    );
   });
 });
 

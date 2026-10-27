@@ -2,27 +2,33 @@ import { About } from "@/components/home/About";
 import { ContactBand } from "@/components/home/ContactBand";
 import { OtherWork } from "@/components/home/OtherWork";
 import { getContent } from "@/content";
+import { FeaturedProjects } from "@/components/featured-projects";
+import { Hero } from "@/components/hero";
+import { toNextMetadata } from "./metadata";
+
+export const metadata = toNextMetadata(getContent().homeMetadata());
 
 export default function HomePage() {
-  const { headline, otherWork, about, contact } = getContent().home();
+  const content = getContent();
+  const home = content.home();
+  const caseStudies = content.caseStudies();
+  // `<` is escaped so content can never close the script tag early.
+  const personJsonLd = JSON.stringify(content.personJsonLd()).replace(/</g, "\\u003c");
 
   return (
     <main>
-      {/* Headline: the hero (name, Title, Pitch, buttons, terminal panel) is built by #27. */}
-      <div className="mx-auto max-w-6xl px-6 pt-12 pb-20">
-        <h1 className="text-5xl font-bold tracking-tight sm:text-7xl">{headline.title}</h1>
-        <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">{headline.pitch}</p>
-      </div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: personJsonLd }} />
+      <Hero home={home} caseStudies={caseStudies} />
 
       <section id="work" className="border-t border-rule py-20">
         <div className="mx-auto max-w-6xl px-6">
-          {/* Featured projects: the heading and card grid from #27 go here, above Other work. */}
-          <OtherWork entries={otherWork} />
+          <FeaturedProjects caseStudies={caseStudies} />
+          <OtherWork entries={home.otherWork} />
         </div>
       </section>
 
-      <About {...about} />
-      <ContactBand {...contact} />
+      <About {...home.about} />
+      <ContactBand {...home.contact} />
     </main>
   );
 }

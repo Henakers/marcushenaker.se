@@ -18,6 +18,12 @@ const homeSchema = z.object({
     title: text,
     pitch: text,
   }),
+  /** The hero's status line and its two button labels. */
+  hero: z.object({
+    status: text,
+    cvLabel: text,
+    contactLabel: text,
+  }),
   topBar: z.object({
     name: text,
     links: z.array(z.object({ label: text, href: link })).min(1),
@@ -57,10 +63,22 @@ const homeSchema = z.object({
     repoUrl: externalUrl,
     copyright: text,
   }),
+  site: z.object({
+    /** The apex origin every canonical URL, sitemap entry and JSON-LD url is built on. No trailing slash. */
+    url: z.url().regex(/[^/]$/, "must not end with a slash"),
+    /** The home page's hand-written meta description. */
+    description: z.string().min(1),
+  }),
+  /** Who the site is about, for titles and the Person JSON-LD (whose sameAs links come from `contact`). */
+  person: z.object({
+    name: text,
+    locality: text,
+  }),
 });
 
 export type HomeContent = z.infer<typeof homeSchema>;
 export type Headline = HomeContent["headline"];
+export type Hero = HomeContent["hero"];
 export type TopBar = HomeContent["topBar"];
 export type OtherWorkEntry = HomeContent["otherWork"][number];
 export type About = HomeContent["about"];
@@ -101,6 +119,35 @@ export interface Content {
    * order and wraps from the last to the first, so every page links onwards.
    */
   caseStudy(slug: string): (CaseStudy & { next: CaseStudy }) | undefined;
+  /** The home page's title, meta description and canonical URL. */
+  homeMetadata(): PageMetadata;
+  /** One Case study page's title, meta description and canonical URL, or undefined for an unknown slug. */
+  caseStudyMetadata(slug: string): PageMetadata | undefined;
+  /** The 404 page's title. It has no description or canonical URL: it is never indexed. */
+  notFoundMetadata(): Pick<PageMetadata, "title">;
+  /** schema.org `Person` structured data for the home page. Deliberately has no `worksFor`. */
+  personJsonLd(): PersonJsonLd;
+  /** The absolute URLs the sitemap lists: home, then every Case study in order. The CV and 404 are left out. */
+  sitemapEntries(): string[];
+  /** The site's apex origin, without a trailing slash. */
+  siteUrl(): string;
+}
+
+export interface PersonJsonLd {
+  "@context": "https://schema.org";
+  "@type": "Person";
+  name: string;
+  jobTitle: string;
+  url: string;
+  sameAs: string[];
+  address: { "@type": "PostalAddress"; addressLocality: string };
+}
+
+/** What a page tells search engines and link previews: its title, meta description and canonical URL. */
+export interface PageMetadata {
+  title: string;
+  description: string;
+  canonical: string;
 }
 
 /** Content that is missing or fails its schema. The message names the file and the field. */
@@ -188,6 +235,7 @@ function loadCaseStudies(dir: string): CaseStudy[] {
 export function loadContent(contentDir: string): Content {
   const home = readFrontmatter(path.join(contentDir, "home.mdx"), homeSchema);
   const caseStudies = loadCaseStudies(path.join(contentDir, "case-studies"));
+  const caseStudyUrl = (slug: string) => `${home.site.url}/work/${slug}`;
   return {
     home: () => home,
     caseStudies: () => caseStudies,
@@ -196,6 +244,32 @@ export function loadContent(contentDir: string): Content {
       if (index === -1) return undefined;
       return { ...caseStudies[index]!, next: caseStudies[(index + 1) % caseStudies.length]! };
     },
+    homeMetadata: () => ({
+      title: `${home.person.name} – ${home.headline.title}`,
+      description: home.site.description,
+      canonical: home.site.url,
+    }),
+    caseStudyMetadata: (slug) => {
+      const study = caseStudies.find((candidate) => candidate.slug === slug);
+      if (!study) return undefined;
+      return {
+        title: `${study.title} – ${home.person.name}`,
+        description: study.description,
+        canonical: caseStudyUrl(study.slug),
+      };
+    },
+    notFoundMetadata: () => ({ title: `Page not found – ${home.person.name}` }),
+    personJsonLd: () => ({
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: home.person.name,
+      jobTitle: home.headline.title,
+      url: home.site.url,
+      sameAs: [home.contact.linkedin, home.contact.github],
+      address: { "@type": "PostalAddress", addressLocality: home.person.locality },
+    }),
+    sitemapEntries: () => [home.site.url, ...caseStudies.map((study) => caseStudyUrl(study.slug))],
+    siteUrl: () => home.site.url,
   };
 }
 
