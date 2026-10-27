@@ -22,3 +22,7 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Next.js
+next-env.d.ts
+*.tsbuildinfo
