@@ -1,0 +1,15 @@
+# Reference copy: install by hand on the Home server (see README.md).
+[Unit]
+Description=Deploy a new portfolio image when its digest changes
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Holds COMPOSE_DIR and NTFY_URL (optionally SERVICE and WAIT_TIMEOUT). Not in the repo.
+EnvironmentFile=/etc/portfolio-deploy.env
+# Bad digests are remembered in /var/lib/portfolio-deploy, passed in as $STATE_DIRECTORY.
+StateDirectory=portfolio-deploy
+ExecStart=/usr/local/bin/portfolio-deploy
+TimeoutStartSec=5min

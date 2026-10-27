@@ -20,6 +20,7 @@ pnpm dev          # http://localhost:3000
 pnpm lint         # ESLint and Prettier
 pnpm typecheck    # TypeScript, strict
 pnpm test         # seam 1: the content module against fixture content; also the banned-words guard
+                  # and the deploy script (run with bash against fake docker and curl)
 pnpm build        # next build; also fails on invalid or missing content
 pnpm test:e2e     # seam 2: starts the built standalone server and checks it over HTTP
 ```
@@ -64,6 +65,51 @@ Dependabot (`.github/dependabot.yml`) opens weekly PRs for npm packages, the Doc
 1. **Make the GHCR package public.** After the first publish, open the `portfolio` package under the account's Packages, then Package settings → Danger Zone → Change visibility → Public, so the **Home server** can pull without credentials.
 2. **Protect `main`.** In the repo's Settings → Branches (or Rules → Rulesets), add a rule for `main` that requires a pull request before merging and requires these status checks to pass: `check` and `container` (from the `CI` workflow) and `Banned-words guard` (from the `Mirror` workflow). Do not require `publish` or `Mirror main to the public repo`: they are skipped on pull requests.
 
+## Deploy on the Home server
+
+`deploy/` holds the reference copy of the deploy script and its systemd units. Nothing installs them automatically: copy them to the **Home server** by hand.
+
+Every 5 minutes `portfolio-deploy.timer` starts `portfolio-deploy.service`, which runs `deploy.sh`:
+
+1. It records the digest of the running `web` container, then runs `docker compose pull web`.
+2. If the pulled digest is the one already running, it stops there. A new digest without a code change (the weekly rebuild) is a normal deploy.
+3. Otherwise it runs `docker compose up --detach --wait`, which relies on the healthcheck in `compose.yaml`, with a 60 s limit.
+4. If the new container is not healthy in time, it restarts the previous digest (`IMAGE_TAG=<tag>@sha256:...` for that one run, so `compose.yaml` stays the source of the service's configuration), marks the new digest bad, sends an ntfy push and exits non-zero. Later runs skip a bad digest until a newer image is published.
+
+Digests are compared by repo digest (`docker image inspect --format '{{index .RepoDigests 0}}'`), not image ID, because `:main` is a manifest list.
+
+### Install (by hand)
+
+From a checkout of the public repo on the server, after reading the files:
+
+```sh
+sudo install -m 755 deploy/deploy.sh /usr/local/bin/portfolio-deploy
+sudo install -m 644 deploy/portfolio-deploy.service deploy/portfolio-deploy.timer /etc/systemd/system/
+sudo install -m 600 deploy/portfolio-deploy.env.example /etc/portfolio-deploy.env
+sudoedit /etc/portfolio-deploy.env   # COMPOSE_DIR and the private ntfy topic URL
+sudo systemctl daemon-reload
+sudo portfolio-deploy --dry-run      # or: sudo systemctl start portfolio-deploy.service
+sudo systemctl enable --now portfolio-deploy.timer
+```
+
+The env file holds the server's configuration, which never goes in the repo:
+
+- `COMPOSE_DIR` (required): the directory holding the server's `compose.yaml` and `.env`.
+- `NTFY_URL`: the ntfy topic URL for failure pushes. Without it, failures only reach the journal.
+- `WAIT_TIMEOUT` (default 60) and `SERVICE` (default `web`).
+
+Bad digests are kept in `/var/lib/portfolio-deploy/bad-digests` (systemd's `StateDirectory`). Delete a line to let the script try that digest again.
+
+`--dry-run` asks the registry for the current digest (`docker buildx imagetools inspect`) instead of pulling, and prints what a real run would do without changing anything.
+
+Follow runs with `journalctl -u portfolio-deploy.service` and see the next run with `systemctl list-timers portfolio-deploy.timer`.
+
+### What is not automatic
+
+Only the image updates by itself. Changes to `compose.yaml`, the deploy script and the units are applied by hand: pull the public repo on the server, read the diff (`git diff HEAD@{1} -- compose.yaml deploy/`), then copy the files into place and run `docker compose up --detach --wait` or reinstall the script and units as above.
+
+After a rollback the previous digest keeps running, but `compose.yaml` still points at `:main`, the bad digest. A manual `docker compose up` would start it again. Pin a good version with `IMAGE_TAG=sha-<7 chars>` in the server's `.env` until a fixed image is published.
+
 ## Public code mirror
 
 This repo stays private. On every push to `main`, the `Mirror` workflow (`.github/workflows/mirror.yml`) pushes `main` with its full history to the public, code-only repo [Henakers/marcushenaker.se](https://github.com/Henakers/marcushenaker.se). Only `main` is mirrored; other branches stay here.
@@ -94,3 +140,4 @@ BANNED_WORDS="first,second" node scripts/banned-words-guard.ts
 - `src/app/`: the Next.js routes.
 - `tests/site/`: the HTTP tests against the built site.
 - `scripts/`: build helpers and the banned-words guard, with its tests against throwaway git repos.
+- `deploy/`: the reference copy of the **Home server**'s deploy script and systemd units, with tests against fake `docker` and `curl` commands.

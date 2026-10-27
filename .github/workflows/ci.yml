@@ -35,6 +35,10 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # ShellCheck is preinstalled on the Ubuntu runners.
+      - name: ShellCheck the deploy script
+        run: shellcheck deploy/deploy.sh
+
       - name: Typecheck
         run: pnpm typecheck
 

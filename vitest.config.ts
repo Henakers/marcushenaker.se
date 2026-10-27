@@ -29,6 +29,16 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          // The deploy script, run with bash against fake `docker` and `curl` commands.
+          name: "deploy",
+          include: ["deploy/**/*.test.ts"],
+          environment: "node",
+          testTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
           // Seam 2: the built site over HTTP. Needs `pnpm build` first.
           name: "site",
           include: ["tests/site/**/*.test.ts"],
