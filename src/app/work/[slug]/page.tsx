@@ -2,8 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getContent } from "@/content";
 import { CaseStudyBody } from "@/components/case-study-body";
+import { toNextMetadata } from "../../metadata";
 
 export const dynamicParams = false;
+
+export async function generateMetadata({ params }: PageProps<"/work/[slug]">) {
+  const { slug } = await params;
+  const metadata = getContent().caseStudyMetadata(slug);
+  return metadata ? toNextMetadata(metadata) : {};
+}
 
 export function generateStaticParams() {
   return getContent()
