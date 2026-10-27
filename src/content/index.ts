@@ -3,6 +3,9 @@ import path from "node:path";
 import matter from "gray-matter";
 import { z } from "zod";
 
+/** The CV PDF's site path. `pnpm cv` writes it under `public/`; every CV link points here. */
+export const CV_PATH = "/Marcus-Henaker-CV.pdf";
+
 const text = z.string().min(1);
 /** A site path ("/...", optionally "/#anchor") or an absolute https URL. */
 const link = z.string().regex(/^(\/|https:\/\/)/, "must be a site path or an https URL");
@@ -26,7 +29,15 @@ const homeSchema = z.object({
   }),
   /** The top bar's section links; the name beside them is `person.name`. */
   topBar: z.object({
-    links: z.array(z.object({ label: text, href: link })).min(1),
+    /** `href: cv` links the CV PDF, so its path is written only in CV_PATH. */
+    links: z
+      .array(
+        z.object({
+          label: text,
+          href: z.union([z.literal("cv").transform(() => CV_PATH), link]),
+        }),
+      )
+      .min(1),
   }),
   otherWork: z
     .array(
@@ -158,13 +169,15 @@ export interface PageMetadata {
 
 /** Content that is missing or fails its schema. The message names the file and the field. */
 export class ContentError extends Error {
-  constructor(
-    readonly file: string,
-    readonly field: string | undefined,
-    reason: string,
-  ) {
+  readonly file: string;
+  readonly field: string | undefined;
+
+  // No parameter properties: `scripts/build-cv.ts` runs this module under Node's type stripping.
+  constructor(file: string, field: string | undefined, reason: string) {
     super(field ? `${file}: field "${field}" ${reason}` : `${file}: ${reason}`);
     this.name = "ContentError";
+    this.file = file;
+    this.field = field;
   }
 }
 

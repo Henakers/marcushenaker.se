@@ -1,4 +1,4 @@
-import type { CaseStudy, HomeContent } from "@/content";
+import { CV_PATH, type CaseStudy, type HomeContent } from "@/content";
 import { TerminalPanel } from "@/components/terminal-panel";
 
 /** The Pitch's first sentence is its lead, set larger; the rest follows as body text. */
@@ -29,7 +29,7 @@ export function Hero({
         {rest && <p className="mt-2 max-w-xl text-lg leading-relaxed text-muted">{rest}</p>}
         <div className="mt-8 flex flex-wrap gap-3">
           <a
-            href="/Marcus-Henaker-CV.pdf"
+            href={CV_PATH}
             className="rounded-lg bg-ink px-5 py-3 font-semibold text-white hover:bg-accent"
           >
             {hero.cvLabel}

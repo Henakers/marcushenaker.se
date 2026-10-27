@@ -1,4 +1,4 @@
-import type { Contact } from "@/content";
+import { CV_PATH, type Contact } from "@/content";
 
 const buttonClass =
   "flex-1 rounded-lg border border-terminal-line px-5 py-3 text-center font-semibold text-white hover:border-terminal-accent";
@@ -29,7 +29,7 @@ export function ContactBand({ heading, availability, email, linkedin, github, cv
             <a href={github} className={buttonClass}>
               GitHub
             </a>
-            <a href="/Marcus-Henaker-CV.pdf" className={buttonClass}>
+            <a href={CV_PATH} className={buttonClass}>
               {cvLabel}
             </a>
           </div>

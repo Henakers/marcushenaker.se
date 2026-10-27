@@ -97,7 +97,7 @@ describe("content module: home", () => {
     expect(home.topBar).toEqual({
       links: [
         { label: "Work", href: "/#work" },
-        { label: "CV", href: "/fixture-cv.pdf" },
+        { label: "CV", href: "/Marcus-Henaker-CV.pdf" },
       ],
     });
     expect(home.otherWork).toEqual([

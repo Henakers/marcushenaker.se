@@ -12,10 +12,11 @@ import { pathToFileURL } from "node:url";
 import matter from "gray-matter";
 import { chromium } from "playwright";
 import { z } from "zod";
+import { CV_PATH } from "../src/content/index.ts";
 import { PLEX_SANS_DIR, PLEX_SANS_FILES } from "../src/fonts.ts";
 
 const SOURCE = "content/cv/cv.md";
-const OUTPUT = "public/Marcus-Henaker-CV.pdf";
+const OUTPUT = `public${CV_PATH}`;
 const ACCENT = "#15803d";
 
 const text = z.string().min(1);
