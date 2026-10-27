@@ -1,4 +1,6 @@
-// Renders the CV source (content/cv/cv.md) to public/Marcus-Henaker-CV.pdf.
+// Renders the CV to the PDF at CV_PATH under public/. The content module assembles and
+// validates the CV from content/cv/cv.md plus the home and case-study content; this script
+// only lays it out.
 //
 // Run by hand with `pnpm cv` whenever a case-study number, role or skill changes,
 // then commit the PDF. CI never builds the CV.
@@ -9,57 +11,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import matter from "gray-matter";
 import { chromium } from "playwright";
-import { z } from "zod";
-import { CV_PATH } from "../src/content/index.ts";
+import { CV_PATH, getContent, type Cv } from "../src/content/index.ts";
 import { PLEX_SANS_DIR, PLEX_SANS_FILES } from "../src/fonts.ts";
 
-const SOURCE = "content/cv/cv.md";
 const OUTPUT = `public${CV_PATH}`;
 const ACCENT = "#15803d";
 
-const text = z.string().min(1);
-const url = z.url({ protocol: /^https$/ });
-
-const cvSchema = z.object({
-  name: text,
-  title: text,
-  contact: z.object({
-    email: z.email(),
-    website: url,
-    linkedin: url,
-    github: url,
-    location: text,
-  }),
-  summary: text,
-  experience: z
-    .array(
-      z.object({
-        role: text,
-        organization: text,
-        period: text,
-        bullets: z.array(text).min(1),
-      }),
-    )
-    .min(1),
-  projects: z.array(z.object({ name: text, result: text, url, repo: url.optional() })).min(1),
-  skills: z.record(text, z.array(text).min(1)),
-  currentlyLearning: text,
-  education: z
-    .array(z.object({ degree: text, school: text, period: text, note: text.optional() }))
-    .min(1),
-});
-
-type Cv = z.infer<typeof cvSchema>;
-
-function loadCv(file: string): Cv {
-  const result = cvSchema.safeParse(matter(fs.readFileSync(file, "utf8")).data);
-  if (!result.success) {
-    const issue = result.error.issues[0]!;
-    throw new Error(`${file}: ${issue.path.join(".") || "(root)"}: ${issue.message}`);
-  }
-  return result.data;
+/** "languages" shown as "Languages". */
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function esc(value: string): string {
@@ -113,14 +74,17 @@ function renderHtml(cv: Cv, updated: string): string {
   const projects = cv.projects
     .map(
       (project) => `
-      <li><strong>${esc(project.name)}</strong>: ${esc(project.result)}. ${link(project.url)}${
+      <li><strong>${esc(project.title)}</strong>: ${esc(project.result)}. ${link(project.url)}${
         project.repo ? ` · Code: ${link(project.repo)}` : ""
       }</li>`,
     )
     .join("");
 
   const skills = Object.entries(cv.skills)
-    .map(([group, items]) => `<p><strong>${esc(group)}:</strong> ${items.map(esc).join(", ")}</p>`)
+    .map(
+      ([group, items]) =>
+        `<p><strong>${esc(capitalize(group))}:</strong> ${items.map(esc).join(", ")}</p>`,
+    )
     .join("");
 
   const education = cv.education
@@ -182,7 +146,7 @@ ${education}
 }
 
 async function main() {
-  const cv = loadCv(SOURCE);
+  const cv = getContent().cv();
   const updated = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const html = renderHtml(cv, updated);
 

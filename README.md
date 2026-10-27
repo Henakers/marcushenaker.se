@@ -36,13 +36,15 @@ pnpm start        # runs .next/standalone/server.js on port 3000
 
 ## Regenerate the CV
 
-The CV's source is `content/cv/cv.md` (YAML frontmatter only). The site serves the generated PDF at `/Marcus-Henaker-CV.pdf` from `public/`. Regenerate it by hand whenever a case-study number, role or skill changes, then commit the PDF:
+The CV goes through the content module like the rest of the site: `content.cv()` assembles it, so the CV always matches the site. `content/cv/cv.md` (YAML frontmatter only) holds only what the CV alone says: the summary, experience, education and any code links for the case studies. The name, Title, contact details, location, skills and the case studies (titles, results and links) come from `content/home.mdx` and `content/case-studies/`. `pnpm build` validates the CV source along with the other content.
+
+The site serves the generated PDF at `/Marcus-Henaker-CV.pdf` (`CV_PATH` in `src/content/index.ts`) from `public/`. Regenerate it by hand whenever a case-study number, role or skill changes, then commit the PDF:
 
 ```sh
 pnpm cv           # writes public/Marcus-Henaker-CV.pdf
 ```
 
-`pnpm cv` installs Playwright's Chromium on first use (no Docker needed), renders the source as an HTML page in IBM Plex Sans and prints it to one A4 page with real, selectable text. The footer's "Updated <month year>" is the date you run it. CI never builds the CV; `pnpm test` checks the committed PDF by extracting its text (one A4 page, the standard headings, the case-study URLs and the footer).
+`pnpm cv` installs Playwright's Chromium on first use (no Docker needed), renders the CV as an HTML page in IBM Plex Sans (`scripts/build-cv.ts`, layout only) and prints it to one A4 page with real, selectable text. The footer's "Updated <month year>" is the date you run it. CI never builds the CV; `pnpm test` checks the committed PDF by extracting its text (one A4 page, the standard headings, the case-study URLs, the footer, and the current name, Title, case-study results and skills, so a stale PDF fails until you rerun `pnpm cv`).
 
 ## Run the container
 
@@ -149,6 +151,6 @@ BANNED_WORDS="first,second" node scripts/banned-words-guard.ts
 - `src/content/`: the content module. It loads and validates everything in `content/` and is the only thing pages read from.
 - `src/app/`: the Next.js routes.
 - `tests/site/`: the HTTP tests against the built site.
-- `content/cv/`: the CV source, rendered to `public/Marcus-Henaker-CV.pdf` by `pnpm cv`.
+- `content/cv/`: what only the CV says; with the home and case-study content it is rendered to `public/Marcus-Henaker-CV.pdf` by `pnpm cv`.
 - `scripts/`: build helpers, the CV renderer and the banned-words guard, with their tests.
 - `deploy/`: the reference copy of the **Home server**'s deploy script and systemd units, with tests against fake `docker` and `curl` commands.

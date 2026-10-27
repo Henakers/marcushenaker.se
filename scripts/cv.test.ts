@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { beforeAll, describe, expect, it } from "vitest";
+import { loadContent } from "../src/content/index.ts";
 
 // Checks the committed CV, the file Visitors download, not a fresh render.
-const CV_PATH = "public/Marcus-Henaker-CV.pdf";
+const PDF_FILE = "public/Marcus-Henaker-CV.pdf";
 
 /** A4 in PDF points (1/72 inch). */
 const A4 = { width: 595.28, height: 841.89 };
@@ -12,7 +13,7 @@ describe("the committed CV PDF", () => {
   let pages: { width: number; height: number; text: string }[];
 
   beforeAll(async () => {
-    const data = new Uint8Array(fs.readFileSync(CV_PATH));
+    const data = new Uint8Array(fs.readFileSync(PDF_FILE));
     const pdf = await getDocument({ data, useSystemFonts: false }).promise;
     pages = [];
     for (let n = 1; n <= pdf.numPages; n++) {
@@ -56,6 +57,19 @@ describe("the committed CV PDF", () => {
     for (const slug of ["data-quality", "supplier-data-pipeline", "degree-project"]) {
       expect(text).toContain(`marcushenaker.se/work/${slug}`);
     }
+  });
+
+  it("matches the site's current content, so a stale PDF fails until `pnpm cv` is rerun", () => {
+    const text = pages[0]!.text.replace(/\s+/g, " ");
+    const cv = loadContent("content").cv();
+    const expected = [
+      cv.name,
+      cv.title,
+      ...cv.projects.flatMap((project) => [project.title, project.result]),
+      ...Object.values(cv.skills).flat(),
+      cv.currentlyLearning,
+    ];
+    for (const value of expected) expect(text).toContain(value);
   });
 
   it('ends with an "Updated <month year>" footer', () => {

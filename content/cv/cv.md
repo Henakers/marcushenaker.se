@@ -1,16 +1,9 @@
 ---
-# The CV's single source. `pnpm cv` renders it to public/Marcus-Henaker-CV.pdf (see README.md).
+# What only the CV says. `pnpm cv` renders it to public/Marcus-Henaker-CV.pdf (see README.md).
+# The name, Title, contact details, location, skills and the case studies (titles, results and
+# links) come from home.mdx and content/case-studies/, so the CV always matches the site.
 # Text starting with "[placeholder]" is a draft to replace before launch, following
-# the CV content decision (issue #16). The numbers must match the case studies exactly.
-name: Marcus Henåker
-title: Software Engineer
-contact:
-  email: marcushenaker@gmail.com
-  website: https://marcushenaker.se
-  # placeholder: confirm the LinkedIn profile URL.
-  linkedin: https://www.linkedin.com/in/marcushenaker
-  github: https://github.com/Henakers
-  location: Gothenburg area, Sweden
+# the CV content decision (issue #16).
 summary: "[placeholder] Software engineer focused on backend and data engineering. I build the pipelines, integrations and validation that give analytics and AI accurate, trustworthy data."
 experience:
   - role: Master Data Manager
@@ -32,29 +25,10 @@ experience:
     period: "[placeholder] Years"
     bullets:
       - "[placeholder] One line on the role."
-projects:
-  - name: Making product data quality measurable
-    result: "[placeholder] quality score up from [X] to [Y]"
-    url: https://marcushenaker.se/work/data-quality
-  - name: One schema for every supplier feed
-    result: "[placeholder] suppliers mapped onto one canonical schema"
-    url: https://marcushenaker.se/work/supplier-data-pipeline
-  - name: Where data quality gets lost (degree project)
-    result: "[placeholder] a repeatable method, later applied at work"
-    url: https://marcushenaker.se/work/degree-project
-    # placeholder: the degree project's public repo does not exist yet.
-    repo: https://github.com/Henakers
-skills:
-  Languages: [Python, SQL, TypeScript, C++]
-  Data:
-    [
-      Database design and data modelling,
-      ETL and data pipelines,
-      Data quality and GS1,
-      REST/XML APIs,
-    ]
-  Infrastructure: [Linux, Docker, Git, GitHub Actions]
-currentlyLearning: Go
+# Code links shown beside a case study, keyed by its slug.
+caseStudyRepos:
+  # placeholder: the degree project's public repo does not exist yet.
+  degree-project: https://github.com/Henakers
 education:
   - degree: BSc Informatics, Business Intelligence
     school: University of Skövde

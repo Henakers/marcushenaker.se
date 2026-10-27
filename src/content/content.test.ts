@@ -40,20 +40,23 @@ interface Patch {
    * change is applied.
    */
   caseStudies?: Record<string, (study: MdxFile) => void>;
+  /** A change to the valid CV frontmatter. */
+  cv?: (data: Frontmatter) => void;
 }
 
 /** A temporary copy of the `valid` fixture with a patch applied, so every variant shares one source. */
-function validContentWith({ home, caseStudies }: Patch): string {
+function validContentWith({ home, caseStudies, cv }: Patch): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "content-fixture-"));
   tempDirs.push(dir);
   fs.cpSync(fixture("valid"), dir, { recursive: true });
 
-  if (home) {
-    const file = path.join(dir, "home.mdx");
-    const mdx = readFixtureMdx(file);
-    home(mdx.data);
-    writeMdx(file, mdx);
-  }
+  const patchFrontmatter = (file: string, change: (data: Frontmatter) => void) => {
+    const mdx = readFixtureMdx(path.join(dir, file));
+    change(mdx.data);
+    writeMdx(path.join(dir, file), mdx);
+  };
+
+  if (home) patchFrontmatter("home.mdx", home);
   if (caseStudies) {
     const studiesDir = path.join(dir, "case-studies");
     fs.rmSync(studiesDir, { recursive: true });
@@ -64,7 +67,10 @@ function validContentWith({ home, caseStudies }: Patch): string {
       change(study);
       writeMdx(path.join(studiesDir, name), study);
     });
+    // The valid CV's code links name the valid Case studies, which are gone now.
+    patchFrontmatter(path.join("cv", "cv.md"), (data) => delete data.caseStudyRepos);
   }
+  if (cv) patchFrontmatter(path.join("cv", "cv.md"), cv);
   return dir;
 }
 
@@ -263,6 +269,103 @@ describe("content module: case studies", () => {
       expect(error.message).toContain(`${path.join("case-studies", file)}: field "${field}"`);
     },
   );
+});
+
+describe("content module: CV", () => {
+  it("takes the name, Title and contact details from the home content", () => {
+    const cv = loadContent(fixture("valid")).cv();
+
+    expect(cv.name).toBe("Fixture Person");
+    expect(cv.title).toBe("Fixture Engineer");
+    expect(cv.contact).toEqual({
+      email: "fixture@example.com",
+      website: "https://fixture.example",
+      linkedin: "https://www.linkedin.com/in/fixture",
+      github: "https://github.com/fixture",
+      location: "Fixture Town, Sweden",
+    });
+  });
+
+  it("takes the skills and what Marcus is learning from the About section", () => {
+    const cv = loadContent(fixture("valid")).cv();
+
+    expect(cv.skills).toEqual({
+      languages: ["Python", "SQL"],
+      data: ["PostgreSQL"],
+      infrastructure: ["Docker"],
+    });
+    expect(cv.currentlyLearning).toBe("Go");
+  });
+
+  it("lists every Case study in order, with its result, site URL and any code link", () => {
+    const cv = loadContent(fixture("valid")).cv();
+
+    expect(cv.projects).toEqual([
+      {
+        title: "Gamma study",
+        result: "Fixture result for gamma.",
+        url: "https://fixture.example/work/gamma",
+      },
+      {
+        title: "Alpha study",
+        result: "Fixture result for alpha.",
+        url: "https://fixture.example/work/alpha",
+        repo: "https://github.com/example/alpha",
+      },
+      {
+        title: "Beta study",
+        result: "Fixture result for beta.",
+        url: "https://fixture.example/work/beta",
+      },
+    ]);
+  });
+
+  it("takes the summary, experience and education from the CV source", () => {
+    const cv = loadContent(fixture("valid")).cv();
+
+    expect(cv.summary).toBe("Fixture summary for the CV.");
+    expect(cv.experience).toEqual([
+      {
+        role: "Fixture Role",
+        organization: "Fixture Employer",
+        period: "2024–present",
+        bullets: ["Fixture bullet one.", "Fixture bullet two."],
+      },
+    ]);
+    expect(cv.education).toEqual([
+      {
+        degree: "BSc Fixture Studies",
+        school: "Fixture University",
+        period: "2021–2024",
+        note: "Fixture note.",
+      },
+    ]);
+  });
+
+  it.each([
+    ["summary", (data: Frontmatter) => delete data.summary],
+    ["experience.0.organization", (data: Frontmatter) => delete data.experience[0].organization],
+    ["education", (data: Frontmatter) => (data.education = [])],
+    [
+      "caseStudyRepos.alpha",
+      (data: Frontmatter) => (data.caseStudyRepos.alpha = "http://github.com/example"),
+    ],
+    [
+      "caseStudyRepos.no-such-study",
+      (data: Frontmatter) => (data.caseStudyRepos["no-such-study"] = "https://github.com/x"),
+    ],
+  ])("throws an error naming cv.md and %s when it is invalid", (field, change) => {
+    const dir = validContentWith({ cv: change });
+
+    expect(() => loadContent(dir)).toThrow(`${path.join("cv", "cv.md")}: field "${field}"`);
+  });
+
+  it("throws an error naming the CV source when it is missing", () => {
+    const dir = validContentWith({});
+    fs.rmSync(path.join(dir, "cv"), { recursive: true });
+
+    expect(() => loadContent(dir)).toThrow(`${path.join("cv", "cv.md")}: file is missing`);
+  });
 });
 
 describe("content module: page metadata", () => {

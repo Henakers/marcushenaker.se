@@ -124,6 +124,45 @@ const caseStudySchema = z.object({
   }),
 });
 
+/**
+ * What only the CV says. Everything else on it (name, Title, contact details, skills and the
+ * Case studies) comes from the home and Case study content, so the CV always matches the site.
+ */
+const cvSchema = z.object({
+  summary: text,
+  experience: z
+    .array(
+      z.object({
+        role: text,
+        organization: text,
+        period: text,
+        bullets: z.array(text).min(1),
+      }),
+    )
+    .min(1),
+  /** Code links shown beside a Case study on the CV, keyed by its slug. */
+  caseStudyRepos: z.record(z.string(), externalUrl).optional(),
+  education: z
+    .array(z.object({ degree: text, school: text, period: text, note: text.optional() }))
+    .min(1),
+});
+
+type CvSource = z.infer<typeof cvSchema>;
+
+/** The CV, assembled from the CV source plus the home and Case study content. */
+export interface Cv {
+  name: string;
+  title: string;
+  contact: { email: string; website: string; linkedin: string; github: string; location: string };
+  summary: string;
+  experience: CvSource["experience"];
+  /** Every Case study, in order. */
+  projects: { title: string; result: string; url: string; repo?: string }[];
+  skills: About["skills"];
+  currentlyLearning: string;
+  education: CvSource["education"];
+}
+
 /** A Case study: its validated frontmatter plus the MDX body, rendered by the page. */
 export type CaseStudy = z.infer<typeof caseStudySchema> & { body: string };
 
@@ -148,6 +187,8 @@ export interface Content {
   sitemapEntries(): string[];
   /** The site's apex origin, without a trailing slash. */
   siteUrl(): string;
+  /** The CV that `pnpm cv` renders to the PDF at CV_PATH. */
+  cv(): Cv;
 }
 
 export interface PersonJsonLd {
@@ -255,6 +296,7 @@ export function loadContent(contentDir: string): Content {
   const home = readFrontmatter(path.join(contentDir, "home.mdx"), homeSchema);
   const caseStudies = loadCaseStudies(path.join(contentDir, "case-studies"));
   const caseStudyUrl = (slug: string) => `${home.site.url}/work/${slug}`;
+  const cv = assembleCv(path.join(contentDir, "cv", "cv.md"), home, caseStudies, caseStudyUrl);
   /** The Case study with this slug and the one after it in order (wrapping), or undefined. */
   const findCaseStudy = (slug: string) => {
     const index = caseStudies.findIndex((study) => study.slug === slug);
@@ -294,6 +336,46 @@ export function loadContent(contentDir: string): Content {
     }),
     sitemapEntries: () => [home.site.url, ...caseStudies.map((study) => caseStudyUrl(study.slug))],
     siteUrl: () => home.site.url,
+    cv: () => cv,
+  };
+}
+
+function assembleCv(
+  file: string,
+  home: HomeContent,
+  caseStudies: CaseStudy[],
+  caseStudyUrl: (slug: string) => string,
+): Cv {
+  const source = readFrontmatter(file, cvSchema);
+  const repos = source.caseStudyRepos ?? {};
+  for (const slug of Object.keys(repos)) {
+    if (!caseStudies.some((study) => study.slug === slug)) {
+      const shown = path.relative(process.cwd(), file);
+      throw new ContentError(shown, `caseStudyRepos.${slug}`, "names no Case study");
+    }
+  }
+
+  return {
+    name: home.person.name,
+    title: home.headline.title,
+    contact: {
+      email: home.contact.email,
+      website: home.site.url,
+      linkedin: home.contact.linkedin,
+      github: home.contact.github,
+      location: home.about.location,
+    },
+    summary: source.summary,
+    experience: source.experience,
+    projects: caseStudies.map((study) => ({
+      title: study.title,
+      result: study.result,
+      url: caseStudyUrl(study.slug),
+      ...(repos[study.slug] && { repo: repos[study.slug] }),
+    })),
+    skills: home.about.skills,
+    currentlyLearning: home.about.currentlyLearning,
+    education: source.education,
   };
 }
 
