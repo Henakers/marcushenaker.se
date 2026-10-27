@@ -4,7 +4,7 @@ const button =
   "flex-1 rounded-lg border border-terminal-line px-5 py-3 text-center font-semibold text-white hover:border-terminal-accent";
 
 /** The dark "Let's talk." band. The address is plain text so it can be selected and copied. */
-export function ContactBand({ heading, availability, email, linkedin, github }: Contact) {
+export function ContactBand({ heading, availability, email, linkedin, github, cvLabel }: Contact) {
   return (
     <section id="contact" className="bg-terminal text-terminal-text">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 py-20 md:grid-cols-2">
@@ -28,6 +28,9 @@ export function ContactBand({ heading, availability, email, linkedin, github }: 
             </a>
             <a href={github} className={button}>
               GitHub
+            </a>
+            <a href="/Marcus-Henaker-CV.pdf" className={button}>
+              {cvLabel}
             </a>
           </div>
         </div>
