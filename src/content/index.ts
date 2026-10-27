@@ -57,6 +57,8 @@ const homeSchema = z.object({
     email: z.email(),
     linkedin: externalUrl,
     github: externalUrl,
+    /** The label of the contact band's CV button. */
+    cvLabel: text,
   }),
   footer: z.object({
     hostingNote: text,

@@ -85,6 +85,7 @@ describe("content module: home", () => {
       email: "fixture@example.com",
       linkedin: "https://www.linkedin.com/in/fixture",
       github: "https://github.com/fixture",
+      cvLabel: "Fixture CV",
     });
     expect(home.footer).toEqual({
       hostingNote: "Fixture hosting note",
@@ -113,6 +114,7 @@ describe("content module: home", () => {
     ["otherWork.1.live", (data: Frontmatter) => (data.otherWork[1].live = "not a url")],
     ["contact.email", (data: Frontmatter) => (data.contact.email = "not-an-email")],
     ["contact.availability", (data: Frontmatter) => delete data.contact.availability],
+    ["contact.cvLabel", (data: Frontmatter) => delete data.contact.cvLabel],
     ["footer.repoUrl", (data: Frontmatter) => delete data.footer.repoUrl],
     ["hero.contactLabel", (data: Frontmatter) => delete data.hero.contactLabel],
     ["topBar.links.0.href", (data: Frontmatter) => (data.topBar.links[0].href = "#work")],
