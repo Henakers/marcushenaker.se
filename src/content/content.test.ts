@@ -95,7 +95,6 @@ describe("content module: home", () => {
     const home = loadContent(fixture("valid")).home();
 
     expect(home.topBar).toEqual({
-      name: "Fixture Name",
       links: [
         { label: "Work", href: "/#work" },
         { label: "CV", href: "/fixture-cv.pdf" },

@@ -7,13 +7,13 @@ import {
 
 const home = getContent().home();
 
-export const alt = `${home.topBar.name} – ${home.headline.title}`;
+export const alt = `${home.person.name} – ${home.headline.title}`;
 export const size = previewImageSize;
 export const contentType = previewImageContentType;
 
 export default function Image() {
   return previewImage({
-    kicker: home.topBar.name,
+    kicker: home.person.name,
     heading: home.headline.title,
     detail: home.headline.pitch,
     tone: "muted",

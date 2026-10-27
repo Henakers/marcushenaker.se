@@ -6,7 +6,7 @@ import {
   previewImageSize,
 } from "@/components/preview-image";
 
-export const alt = `A case study by ${getContent().home().topBar.name}`;
+export const alt = `A case study by ${getContent().home().person.name}`;
 export const size = previewImageSize;
 export const contentType = previewImageContentType;
 
@@ -30,6 +30,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     heading: study.title,
     detail: study.result,
     tone: "accent",
-    footer: getContent().home().topBar.name,
+    footer: getContent().home().person.name,
   });
 }

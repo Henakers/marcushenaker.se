@@ -26,12 +26,12 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const { topBar, footer } = getContent().home();
+  const { topBar, footer, person } = getContent().home();
 
   return (
     <html lang="en-GB" className={`${plexSans.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen font-sans antialiased">
-        <TopBar {...topBar} />
+        <TopBar name={person.name} links={topBar.links} />
         {children}
         <Footer {...footer} />
       </body>

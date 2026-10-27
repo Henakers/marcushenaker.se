@@ -24,8 +24,8 @@ const homeSchema = z.object({
     cvLabel: text,
     contactLabel: text,
   }),
+  /** The top bar's section links; the name beside them is `person.name`. */
   topBar: z.object({
-    name: text,
     links: z.array(z.object({ label: text, href: link })).min(1),
   }),
   otherWork: z
@@ -71,7 +71,10 @@ const homeSchema = z.object({
     /** The home page's hand-written meta description. */
     description: z.string().min(1),
   }),
-  /** Who the site is about, for titles and the Person JSON-LD (whose sameAs links come from `contact`). */
+  /**
+   * Who the site is about: the one name shown in the top bar, titles, preview images and the
+   * Person JSON-LD (whose sameAs links come from `contact`).
+   */
   person: z.object({
     name: text,
     locality: text,
