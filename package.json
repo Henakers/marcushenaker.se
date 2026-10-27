@@ -15,7 +15,7 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run --project content",
+    "test": "vitest run --project content --project scripts",
     "test:e2e": "vitest run --project site"
   },
   "dependencies": {

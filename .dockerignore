@@ -1,0 +1,21 @@
+# Only what `next build` needs goes into the build context.
+.git
+.github
+.claude
+.next
+node_modules
+docs
+tests
+*.log
+.env
+.env.*
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+Dockerfile
+.dockerignore
+compose*.yaml
+README.md
+CLAUDE.md
+CONTEXT.md
