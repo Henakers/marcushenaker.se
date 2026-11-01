@@ -18,9 +18,11 @@ export function OtherWork({ entries }: { entries: OtherWorkEntry[] }) {
                 </span>
               ))}
             </span>
-            <a href={entry.github} className="text-sm font-semibold text-accent">
-              GitHub
-            </a>
+            {entry.github && (
+              <a href={entry.github} className="text-sm font-semibold text-accent">
+                GitHub
+              </a>
+            )}
             {entry.live && (
               <a href={entry.live} className="text-sm font-semibold text-accent">
                 Live

@@ -45,7 +45,7 @@ const homeSchema = z.object({
         name: text,
         line: text,
         tags: z.array(text).min(2).max(3),
-        github: externalUrl,
+        github: externalUrl.optional(),
         live: externalUrl.optional(),
         image: image.optional(),
       }),

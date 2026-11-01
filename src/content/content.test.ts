@@ -144,6 +144,14 @@ describe("content module: home", () => {
     });
   });
 
+  it("accepts an Other work entry without a GitHub link", () => {
+    const dir = validHomeWith((data) => {
+      delete data.otherWork[1].github;
+    });
+
+    expect(loadContent(dir).home().otherWork[1]!.github).toBeUndefined();
+  });
+
   it("accepts an Other work entry without a live link or an image", () => {
     const dir = validHomeWith((data) => {
       delete data.otherWork[0].image;
