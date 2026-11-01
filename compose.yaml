@@ -1,0 +1,26 @@
+services:
+  web:
+    image: ghcr.io/henakers/portfolio:${IMAGE_TAG:-main}
+    ports:
+      # Loopback only: Docker's iptables rules would otherwise expose the site on the LAN,
+      # outside the Cloudflare Tunnel.
+      - "127.0.0.1:3001:3000"
+    restart: unless-stopped
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      # Alpine has no curl, so fetch `/` with Node.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 2s

@@ -1,0 +1,11 @@
+# Reference copy: install by hand on the Home server (see README.md).
+[Unit]
+Description=Check for a new portfolio image every 5 minutes
+
+[Timer]
+OnCalendar=*:0/5
+RandomizedDelaySec=30s
+Unit=portfolio-deploy.service
+
+[Install]
+WantedBy=timers.target

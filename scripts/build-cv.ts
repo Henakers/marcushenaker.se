@@ -1,0 +1,175 @@
+// Renders the CV to the PDF at CV_PATH under public/. The content module assembles and
+// validates the CV from content/cv/cv.md plus the home and case-study content; this script
+// only lays it out.
+//
+// Run by hand with `pnpm cv` whenever a case-study number, role or skill changes,
+// then commit the PDF. CI never builds the CV.
+//
+// The CV is an HTML page printed to A4 by headless Chromium (Playwright), so the
+// text stays real, selectable text in IBM Plex Sans, and links stay clickable.
+
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { chromium } from "playwright";
+import { CV_PATH, getContent, type Cv } from "../src/content/index.ts";
+import { PLEX_SANS_DIR, PLEX_SANS_FILES } from "../src/fonts.ts";
+
+const OUTPUT = `public${CV_PATH}`;
+const ACCENT = "#15803d";
+
+/** "languages" shown as "Languages". */
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function esc(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/** "https://marcushenaker.se/work/x" shown as "marcushenaker.se/work/x". */
+function shortUrl(href: string): string {
+  return href.replace(/^https:\/\/(www\.)?/, "").replace(/\/$/, "");
+}
+
+function link(href: string): string {
+  return `<a href="${esc(href)}">${esc(shortUrl(href))}</a>`;
+}
+
+function fontFaces(): string {
+  // The same IBM Plex Sans files the preview images use.
+  return PLEX_SANS_FILES.map(({ weight, file: name }) => {
+    const file = path.resolve(PLEX_SANS_DIR, name);
+    return `@font-face { font-family: "IBM Plex Sans"; font-weight: ${weight}; src: url("${pathToFileURL(file).href}") format("woff"); }`;
+  }).join("\n");
+}
+
+function renderHtml(cv: Cv, updated: string): string {
+  const { contact } = cv;
+  const contactLine = [
+    `<a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a>`,
+    link(contact.website),
+    link(contact.linkedin),
+    link(contact.github),
+    esc(contact.location),
+  ]
+    // Each item stays whole when the line wraps, so text extraction never splits one.
+    .map((item) => `<span class="nowrap">${item}</span>`)
+    .join(" · ");
+
+  const experience = cv.experience
+    .map(
+      (job) => `
+      <div class="entry">
+        <div class="entry-head"><span><strong>${esc(job.role)}</strong>, ${esc(job.organization)}</span><span class="period">${esc(job.period)}</span></div>
+        <ul>${job.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>
+      </div>`,
+    )
+    .join("");
+
+  const projects = cv.projects
+    .map(
+      (project) => `
+      <li><strong>${esc(project.title)}</strong>: ${esc(project.result)}. ${link(project.url)}${
+        project.repo ? ` · Code: ${link(project.repo)}` : ""
+      }</li>`,
+    )
+    .join("");
+
+  const skills = Object.entries(cv.skills)
+    .map(
+      ([group, items]) =>
+        `<p><strong>${esc(capitalize(group))}:</strong> ${items.map(esc).join(", ")}</p>`,
+    )
+    .join("");
+
+  const education = cv.education
+    .map(
+      (degree) => `
+      <div class="entry">
+        <div class="entry-head"><span><strong>${esc(degree.degree)}</strong>, ${esc(degree.school)}</span><span class="period">${esc(degree.period)}</span></div>
+        ${degree.note ? `<p>${esc(degree.note)}</p>` : ""}
+      </div>`,
+    )
+    .join("");
+
+  return `<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>${esc(cv.name)} – CV</title>
+<style>
+${fontFaces()}
+@page { size: A4; margin: 16mm 18mm 14mm; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: "IBM Plex Sans", sans-serif; font-size: 9.6pt; line-height: 1.42; color: #1c1917; }
+a { color: inherit; text-decoration: none; white-space: nowrap; }
+h1 { font-size: 22pt; font-weight: 700; margin: 0; line-height: 1.1; }
+.title { font-size: 12pt; font-weight: 600; color: ${ACCENT}; margin: 2pt 0 4pt; }
+.contact { color: #57534e; font-size: 9pt; }
+h2 { font-size: 11pt; font-weight: 600; margin: 13pt 0 5pt; padding-bottom: 2pt; border-bottom: 0.75pt solid ${ACCENT}; }
+p { margin: 0 0 3pt; }
+ul { margin: 2pt 0 0; padding-left: 13pt; }
+li { margin-bottom: 1.5pt; }
+.entry { margin-bottom: 7pt; }
+.entry-head { display: flex; justify-content: space-between; gap: 12pt; }
+.period, .nowrap { white-space: nowrap; }
+.period { color: #57534e; }
+footer { margin-top: 14pt; color: #78716c; font-size: 8pt; }
+</style>
+</head>
+<body>
+<header>
+  <h1>${esc(cv.name)}</h1>
+  <p class="title">${esc(cv.title)}</p>
+  <p class="contact">${contactLine}</p>
+</header>
+<h2>Summary</h2>
+<p>${esc(cv.summary)}</p>
+<h2>Experience</h2>
+${experience}
+<h2>Selected projects</h2>
+<ul>${projects}</ul>
+<h2>Skills</h2>
+${skills}
+<p>Currently learning: ${esc(cv.currentlyLearning)}.</p>
+<h2>Education</h2>
+${education}
+<footer>Updated ${esc(updated)}</footer>
+</body>
+</html>`;
+}
+
+async function main() {
+  const cv = getContent().cv();
+  const updated = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const html = renderHtml(cv, updated);
+
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    // Load from a file URL so the page may read the local font files.
+    const tmp = path.resolve("node_modules/.cache/cv.html");
+    fs.mkdirSync(path.dirname(tmp), { recursive: true });
+    fs.writeFileSync(tmp, html);
+    await page.goto(pathToFileURL(tmp).href);
+    await page.evaluate(() => document.fonts.ready);
+    await page.pdf({
+      path: OUTPUT,
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      tagged: true,
+    });
+  } finally {
+    await browser.close();
+  }
+  console.log(`Wrote ${OUTPUT} (Updated ${updated}).`);
+}
+
+await main();
