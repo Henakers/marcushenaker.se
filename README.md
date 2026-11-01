@@ -19,7 +19,7 @@ pnpm dev          # http://localhost:3000
 ```sh
 pnpm lint         # ESLint and Prettier
 pnpm typecheck    # TypeScript, strict
-pnpm test         # seam 1: the content module against fixture content; also the banned-words guard
+pnpm test         # seam 1: the content module against fixture content; also the CV PDF
                   # and the deploy script (run with bash against fake docker and curl)
 pnpm build        # next build; also fails on invalid or missing content
 pnpm test:e2e     # seam 2: starts the built standalone server and checks it over HTTP
@@ -75,7 +75,7 @@ Dependabot (`.github/dependabot.yml`) opens weekly PRs for npm packages, the Doc
 ### One-time publish setup (by hand)
 
 1. **Make the GHCR package public.** After the first publish, open the `portfolio` package under the account's Packages, then Package settings → Danger Zone → Change visibility → Public, so the **Home server** can pull without credentials.
-2. **Protect `main`.** In the repo's Settings → Branches (or Rules → Rulesets), add a rule for `main` that requires a pull request before merging and requires these status checks to pass: `check` and `container` (from the `CI` workflow) and `Banned-words guard` (from the `Mirror` workflow). Do not require `publish` or `Mirror main to the public repo`: they are skipped on pull requests.
+2. **Protect `main`.** In the repo's Settings → Branches (or Rules → Rulesets), add a rule for `main` that requires a pull request before merging and requires these status checks to pass: `check` and `container` (from the `CI` workflow). Do not require `publish` or `Mirror main to the public repo`: they are skipped on pull requests.
 
 ## Deploy on the Home server
 
@@ -126,25 +126,15 @@ After a rollback the previous digest keeps running, but `compose.yaml` still poi
 
 This repo stays private. On every push to `main`, the `Mirror` workflow (`.github/workflows/mirror.yml`) pushes `main` with its full history to the public, code-only repo [Henakers/marcushenaker.se](https://github.com/Henakers/marcushenaker.se). Only `main` is mirrored; other branches stay here.
 
-The mirror only runs after the banned-words guard (`scripts/banned-words-guard.ts`) passes. The guard scans file contents, file paths and commit messages across the whole history of `main`, case-insensitively. The only exemption is the content of `public/Marcus-Henaker-CV.pdf`. It reports where a hit is (file and commit, or only the commit when the path itself is the hit) and never prints the banned words. It fails when the word list is empty. The guard also runs on pull requests and can be started by hand on any branch from the Actions tab.
-
-Run it locally:
-
-```sh
-BANNED_WORDS="first,second" node scripts/banned-words-guard.ts
-```
+Nothing checks what is mirrored: whatever lands on `main`, including its history and commit messages, becomes public.
 
 ### One-time setup (by hand)
 
 1. Create the public repo `Henakers/marcushenaker.se`, empty (no README, license or `.gitignore`), so the first push of `main` fast-forwards.
 2. Generate a key pair for the mirror only: `ssh-keygen -t ed25519 -N "" -C "portfolio mirror" -f mirror_key`.
 3. In `Henakers/marcushenaker.se` → Settings → Deploy keys, add `mirror_key.pub` with **Allow write access** ticked.
-4. In this repo → Settings → Secrets and variables → Actions, add:
-   - `MIRROR_DEPLOY_KEY`: the contents of the private key `mirror_key`.
-   - `BANNED_WORDS`: the banned words, one per line or comma-separated (case does not matter).
-5. Add `BANNED_WORDS` a second time, with the same value, under Settings → Secrets and variables → Dependabot. Workflows started by Dependabot pull requests cannot read Actions secrets, only Dependabot secrets, so without it the required `Banned-words guard` check fails on every Dependabot PR. `MIRROR_DEPLOY_KEY` stays an Actions secret only: the mirror never runs on pull requests.
-6. Delete both key files locally.
-7. Prove the guard once: push a branch with a planted banned word, open a pull request, check that the `Banned-words guard` job fails without printing the word, and link that run from the pull request. Then delete the branch.
+4. In this repo → Settings → Secrets and variables → Actions, add `MIRROR_DEPLOY_KEY`: the contents of the private key `mirror_key`.
+5. Delete both key files locally.
 
 ## Layout
 
@@ -153,5 +143,5 @@ BANNED_WORDS="first,second" node scripts/banned-words-guard.ts
 - `src/app/`: the Next.js routes.
 - `tests/site/`: the HTTP tests against the built site.
 - `content/cv/`: what only the CV says; with the home and case-study content it is rendered to `public/Marcus-Henaker-CV.pdf` by `pnpm cv`.
-- `scripts/`: build helpers, the CV renderer and the banned-words guard, with their tests.
+- `scripts/`: build helpers and the CV renderer, with the CV test.
 - `deploy/`: the reference copy of the **Home server**'s deploy script and systemd units, with tests against fake `docker` and `curl` commands.

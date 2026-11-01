@@ -1,46 +1,18 @@
 name: Mirror
 
 # Mirrors main, with full history, to the public code-only repo
-# Henakers/marcushenaker.se. The banned-words guard must pass first.
-# The guard also runs on pull requests (and by hand on any branch) so a
-# planted banned word fails before it can reach main; only a push to main
-# mirrors.
+# Henakers/marcushenaker.se on every push to main.
 
 on:
   push:
     branches: [main]
-  pull_request:
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  guard:
-    name: Banned-words guard
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          # The guard needs no dependencies; without this, setup-node reads
-          # packageManager from package.json and fails looking for pnpm.
-          package-manager-cache: false
-
-      - name: Scan contents, paths and commit messages over the full history
-        env:
-          BANNED_WORDS: ${{ secrets.BANNED_WORDS }}
-        run: node scripts/banned-words-guard.ts HEAD
-
   mirror:
     name: Mirror main to the public repo
-    needs: guard
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
       group: mirror

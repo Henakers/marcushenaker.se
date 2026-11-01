@@ -19,7 +19,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          // The banned-words guard, run as a CLI against throwaway git repos.
+          // The CV PDF and other script tests.
           name: "scripts",
           include: ["scripts/**/*.test.ts"],
           environment: "node",
