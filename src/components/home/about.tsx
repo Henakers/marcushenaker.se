@@ -11,8 +11,8 @@ export function About({ photo, paragraphs, location, skills, currentlyLearning }
           src={photo.src}
           alt={photo.alt}
           width={224}
-          height={256}
-          className="h-64 w-56 rounded-xl bg-rule object-cover"
+          height={224}
+          className="size-56 rounded-xl bg-rule object-cover"
         />
         <div>
           <h2 className="text-3xl font-bold">About</h2>
