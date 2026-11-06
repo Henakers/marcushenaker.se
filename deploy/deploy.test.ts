@@ -31,7 +31,8 @@ const NEW = "sha256:222222222222222222222222222222222222222222222222222222222222
  * `compose up` for any digest listed in $FAKE_STATE/broken. `compose up` hangs for any
  * digest listed in $FAKE_STATE/hanging. `compose pull` fails while $FAKE_STATE/pull-fails
  * exists. While $FAKE_STATE/no-buildx exists, `buildx` fails as it does in a Docker
- * without the buildx plugin.
+ * without the buildx plugin. `buildx imagetools inspect` behaves like buildx 0.30: a
+ * format starting with `{{.Manifest` prints the whole manifest, not the template.
  */
 const fakeDocker = `#!/usr/bin/env bash
 set -euo pipefail
@@ -67,7 +68,14 @@ case "$*" in
     fi
     case "$*" in
       "buildx version") echo "github.com/docker/buildx v0.17.1" ;;
-      "buildx imagetools inspect "*) read_state remote ;;
+      "buildx imagetools inspect --format "*)
+        case "$5" in
+          "{{.Manifest"*)
+            printf 'Name:      %s\\nMediaType: application/vnd.oci.image.index.v1+json\\nDigest:    %s\\n' "${IMAGE}:main" "$(read_state remote)" ;;
+          "{{json .Manifest.Digest}}")
+            printf '"%s"\\n' "$(read_state remote)" ;;
+          *) echo "fake docker: unexpected format: $5" >&2; exit 99 ;;
+        esac ;;
       *) echo "fake docker: unexpected call: $*" >&2; exit 99 ;;
     esac ;;
   "compose up "*)
@@ -294,6 +302,7 @@ describe.skipIf(!bash)("deploy.sh", () => {
     expect(result.status).not.toBe(0);
     expect(result.output).toContain("buildx plugin");
     expect(result.output).toContain("docker-buildx-plugin");
+    expect(result.output).toContain("docker-buildx from Ubuntu");
     expect(result.output).not.toContain("Could not read the digest");
     expect(server.running()).toBe(OLD);
     expect(server.dockerCalls().filter((call) => /^compose (pull|up)/.test(call))).toEqual([]);
@@ -307,6 +316,25 @@ describe.skipIf(!bash)("deploy.sh", () => {
 
     expect(result.status).toBe(0);
     expect(server.running()).toBe(NEW);
+  });
+
+  it("says there is no change in a dry run when the registry digest is already running", () => {
+    const server = createServer({ running: OLD, remote: OLD });
+
+    const result = server.run("--dry-run");
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain(`No change: ${IMAGE}:main is still ${OLD}.`);
+  });
+
+  it("fails when the pulled digest is not a sha256 digest", () => {
+    const server = createServer({ running: OLD, remote: "latest" });
+
+    const result = server.run();
+
+    expect(result.status).not.toBe(0);
+    expect(server.upDigests()).toEqual([]);
+    expect(result.output).toContain("Could not read the digest");
   });
 
   it("reports a marked-bad digest in a dry run", () => {

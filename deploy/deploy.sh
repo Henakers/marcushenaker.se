@@ -123,13 +123,17 @@ if [[ "$dry_run" == true ]]; then
   # Ask the registry instead of pulling, so not even the local `:main` tag moves. That
   # needs buildx, which a real run does not; without it Docker's own error is misleading.
   docker buildx version >/dev/null 2>&1 ||
-    fail "A dry run needs the Docker buildx plugin to ask the registry for the digest. Install it (docker-buildx-plugin on Debian/Ubuntu), or start a real run with systemctl."
-  new="$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "$ref")" || new=""
+    fail "A dry run needs the Docker buildx plugin to ask the registry for the digest. Install it (docker-buildx-plugin from Docker's apt repo, docker-buildx from Ubuntu's), or start a real run with systemctl."
+  # Not `{{.Manifest.Digest}}`: buildx up to 0.30 prints the whole manifest for any
+  # format starting with `{{.Manifest`. The json form runs as a template everywhere.
+  new="$(docker buildx imagetools inspect --format '{{json .Manifest.Digest}}' "$ref")" || new=""
+  new="${new//\"/}"
 else
   docker compose pull --quiet "$SERVICE" || fail "Could not pull $ref; ${running:-nothing} keeps running."
   new="$(repo_digest "$ref")" || new=""
 fi
-if [[ -z "$new" ]]; then
+# Anything but a bare digest means the output was misread; never compare or deploy it.
+if [[ ! "$new" =~ ^sha256:[0-9a-f]{64}$ ]]; then
   fail "Could not read the digest of $ref; ${running:-nothing} keeps running."
 fi
 
