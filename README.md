@@ -88,11 +88,11 @@ Every 5 minutes `portfolio-deploy.timer` starts `portfolio-deploy.service`, whic
 3. Otherwise it runs `docker compose up --detach --wait`, which relies on the healthcheck in `compose.yaml`, with a 60 s limit.
 4. If the new container is not healthy in time, it restarts the previous digest (`IMAGE_TAG=<tag>@sha256:...` for that one run, so `compose.yaml` stays the source of the service's configuration), marks the new digest bad, sends an ntfy push and exits non-zero. Later runs skip a bad digest until a newer image is published.
 
-Digests are compared by repo digest, not image ID, because `:main` is a manifest list. For both the running container's image and the pulled `:main`, the script takes the first line of `docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}'` and keeps the `sha256:...` part after the `@`. A dry run takes the pulled side from the registry instead (`{{.Manifest.Digest}}` from `docker buildx imagetools inspect`).
+Digests are compared by repo digest, not image ID, because `:main` is a manifest list. For both the running container's image and the pulled `:main`, the script takes the first line of `docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}'` and keeps the `sha256:...` part after the `@`. A dry run takes the pulled side from the registry instead (`{{json .Manifest.Digest}}` from `docker buildx imagetools inspect`; buildx up to 0.30 ignores a plain `{{.Manifest.Digest}}` and prints the whole manifest). Either way, anything but a bare `sha256:` digest fails the run.
 
 ### Install (by hand)
 
-The server needs Docker with the Compose plugin. `--dry-run` also needs the buildx plugin (`sudo apt install docker-buildx-plugin` on Debian/Ubuntu) to ask the registry; real runs do not, and without it the dry run stops and says so.
+The server needs Docker with the Compose plugin. `--dry-run` also needs the buildx plugin (`docker-buildx-plugin` with Docker's own apt repo, `docker-buildx` with Ubuntu's `docker.io`) to ask the registry; real runs do not, and without it the dry run stops and says so.
 
 From a checkout of the public repo on the server, after reading the files:
 
