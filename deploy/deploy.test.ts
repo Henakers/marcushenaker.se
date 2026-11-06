@@ -30,7 +30,8 @@ const NEW = "sha256:222222222222222222222222222222222222222222222222222222222222
  * registry's `:main` digest as files in $FAKE_STATE, logs every call, and fails
  * `compose up` for any digest listed in $FAKE_STATE/broken. `compose up` hangs for any
  * digest listed in $FAKE_STATE/hanging. `compose pull` fails while $FAKE_STATE/pull-fails
- * exists.
+ * exists. While $FAKE_STATE/no-buildx exists, `buildx` fails as it does in a Docker
+ * without the buildx plugin.
  */
 const fakeDocker = `#!/usr/bin/env bash
 set -euo pipefail
@@ -59,8 +60,16 @@ case "$*" in
       exit 1
     fi
     read_state remote > "$state/local" ;;
-  "buildx imagetools inspect "*)
-    read_state remote ;;
+  buildx*)
+    if [[ -f "$state/no-buildx" ]]; then
+      echo "docker: 'buildx' is not a docker command." >&2
+      exit 1
+    fi
+    case "$*" in
+      "buildx version") echo "github.com/docker/buildx v0.17.1" ;;
+      "buildx imagetools inspect "*) read_state remote ;;
+      *) echo "fake docker: unexpected call: $*" >&2; exit 99 ;;
+    esac ;;
   "compose up "*)
     tag="\${IMAGE_TAG:-main}"
     if [[ "$tag" == *@* ]]; then digest="\${tag#*@}"; else digest="$(read_state local)"; fi
@@ -96,6 +105,7 @@ function createServer(initial: {
   hanging?: string[];
   waitTimeout?: number;
   pullFails?: boolean;
+  noBuildx?: boolean;
 }) {
   const root = mkdtempSync(join(tmpdir(), "portfolio-deploy-"));
   dirs.push(root);
@@ -114,6 +124,7 @@ function createServer(initial: {
   writeFileSync(join(fake, "broken"), (initial.broken ?? []).join("\n") + "\n");
   writeFileSync(join(fake, "hanging"), (initial.hanging ?? []).join("\n") + "\n");
   if (initial.pullFails) writeFileSync(join(fake, "pull-fails"), "");
+  if (initial.noBuildx) writeFileSync(join(fake, "no-buildx"), "");
 
   const read = (name: string) => {
     const file = join(fake, name);
@@ -273,6 +284,29 @@ describe.skipIf(!bash)("deploy.sh", () => {
     expect(server.running()).toBe(OLD);
     expect(server.dockerCalls().filter((call) => /^compose (pull|up)/.test(call))).toEqual([]);
     expect(server.pushes()).toEqual([]);
+  });
+
+  it("fails a dry run with a message naming the buildx plugin when Docker has none", () => {
+    const server = createServer({ running: OLD, remote: NEW, noBuildx: true });
+
+    const result = server.run("--dry-run");
+
+    expect(result.status).not.toBe(0);
+    expect(result.output).toContain("buildx plugin");
+    expect(result.output).toContain("docker-buildx-plugin");
+    expect(result.output).not.toContain("Could not read the digest");
+    expect(server.running()).toBe(OLD);
+    expect(server.dockerCalls().filter((call) => /^compose (pull|up)/.test(call))).toEqual([]);
+    expect(server.pushes()).toEqual([]);
+  });
+
+  it("does not need buildx for a real run", () => {
+    const server = createServer({ running: OLD, remote: NEW, noBuildx: true });
+
+    const result = server.run();
+
+    expect(result.status).toBe(0);
+    expect(server.running()).toBe(NEW);
   });
 
   it("reports a marked-bad digest in a dry run", () => {

@@ -120,7 +120,10 @@ log "Running: ${running:-nothing}."
 
 # `|| new=""` keeps `set -e` from exiting before the failure is pushed.
 if [[ "$dry_run" == true ]]; then
-  # Ask the registry instead of pulling, so not even the local `:main` tag moves.
+  # Ask the registry instead of pulling, so not even the local `:main` tag moves. That
+  # needs buildx, which a real run does not; without it Docker's own error is misleading.
+  docker buildx version >/dev/null 2>&1 ||
+    fail "A dry run needs the Docker buildx plugin to ask the registry for the digest. Install it (docker-buildx-plugin on Debian/Ubuntu), or start a real run with systemctl."
   new="$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "$ref")" || new=""
 else
   docker compose pull --quiet "$SERVICE" || fail "Could not pull $ref; ${running:-nothing} keeps running."
