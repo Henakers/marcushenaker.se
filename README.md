@@ -92,6 +92,8 @@ Digests are compared by repo digest, not image ID, because `:main` is a manifest
 
 ### Install (by hand)
 
+The server needs Docker with the Compose plugin. `--dry-run` also needs the buildx plugin (`sudo apt install docker-buildx-plugin` on Debian/Ubuntu) to ask the registry; real runs do not, and without it the dry run stops and says so.
+
 From a checkout of the public repo on the server, after reading the files:
 
 ```sh
