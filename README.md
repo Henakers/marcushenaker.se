@@ -100,7 +100,8 @@ sudo install -m 644 deploy/portfolio-deploy.service deploy/portfolio-deploy.time
 sudo install -m 600 deploy/portfolio-deploy.env.example /etc/portfolio-deploy.env
 sudoedit /etc/portfolio-deploy.env   # COMPOSE_DIR and the private ntfy topic URL
 sudo systemctl daemon-reload
-sudo portfolio-deploy --dry-run      # or: sudo systemctl start portfolio-deploy.service
+sudo bash -c 'set -a; . /etc/portfolio-deploy.env; portfolio-deploy --dry-run'
+sudo systemctl start portfolio-deploy.service   # one real run, as the timer does it
 sudo systemctl enable --now portfolio-deploy.timer
 ```
 
@@ -112,7 +113,7 @@ The env file holds the server's configuration, which never goes in the repo:
 
 Bad digests are kept in `/var/lib/portfolio-deploy/bad-digests` (systemd's `StateDirectory`). Delete a line to let the script try that digest again.
 
-`--dry-run` asks the registry for the current digest (`docker buildx imagetools inspect`) instead of pulling, and prints what a real run would do without changing anything.
+`--dry-run` asks the registry for the current digest (`docker buildx imagetools inspect`) instead of pulling, and prints what a real run would do without changing anything. Only systemd reads the env file (`EnvironmentFile=`), so any run outside it, like the dry run above, loads the file first with `set -a; . /etc/portfolio-deploy.env`; without it the script stops at the missing `COMPOSE_DIR`.
 
 Follow runs with `journalctl -u portfolio-deploy.service` and see the next run with `systemctl list-timers portfolio-deploy.timer`.
 
